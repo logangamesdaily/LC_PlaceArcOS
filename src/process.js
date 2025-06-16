@@ -16,11 +16,13 @@ class proc extends ThirdPartyAppProcess {
 
 	myAmazingFunction() {
 		let placeAPI = new PlaceAPI();
+		let body = this.getBody();
+		let canvas = body.querySelector("#canvas");
 
 		// Check if the process is disposed at the top of every method. This makes sure the process has the least amount of lasting effects.
 		if (this._disposed) return;
 
-		console.log(placeAPI.initialPixelGrab());  
+		placeAPI.init(canvas, body);
 
 		Debug("Working!");
 	}
