@@ -1,4 +1,5 @@
 const html = await loadHtml("body.html");
+const { PlaceAPI } = await load("./place.js");
 
 class proc extends ThirdPartyAppProcess {
 	constructor(handler, pid, parentPid, app, workingDirectory, ...args) {
@@ -14,8 +15,12 @@ class proc extends ThirdPartyAppProcess {
 	}
 
 	myAmazingFunction() {
+		let placeAPI = new PlaceAPI();
+
 		// Check if the process is disposed at the top of every method. This makes sure the process has the least amount of lasting effects.
 		if (this._disposed) return;
+
+		console.log(placeAPI.initialPixelGrab());  
 
 		Debug("Working!");
 	}
