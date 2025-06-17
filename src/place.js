@@ -54,6 +54,8 @@ class PlaceAPI {
             }
         })
         canvas.style.scale = 1;
+        canvas.style.width = "100%";
+        canvas.style.height = "auto";
 
         const options = {
             bounds: "parent",
@@ -63,11 +65,22 @@ class PlaceAPI {
 
         canvas.addEventListener('wheel', (event) => {
             event.preventDefault();
-            if (event.wheelDelta > 0 && parseFloat(canvas.style.scale) > 0.2) {
-                canvas.style.scale = (parseFloat(canvas.style.scale) || 1) / (1.1);
-            } else if (event.wheelDelta < 0 && parseFloat(canvas.style.scale) < 10) {
-                canvas.style.scale = (parseFloat(canvas.style.scale) || 1) * (1.1);
+            let zoom = parseFloat(canvas.style.width.replace("%","")) || 100;
+            console.log(`Current zoom: ${zoom}%`);
+            if (event.wheelDelta > 0 && parseFloat(canvas.style.width.replace("%","")) > 20) {
+                let newZoomNum = Math.floor(zoom / 1.1);
+                console.log(`New zoom: ${newZoomNum}`);
+                let newZoom = (newZoomNum) + "%";
+                console.log(`New zoom: ${newZoom}`);
+                canvas.style.width = newZoom;
+            } else if (event.wheelDelta < 0 && parseFloat(canvas.style.width.replace("%","")) < 500) {
+                let newZoomNum = Math.floor(zoom * 1.1);
+                console.log(`New zoom: ${newZoomNum}`);
+                let newZoom = (newZoomNum) + "%";
+                console.log(`New zoom: ${newZoom}`);
+                canvas.style.width = newZoom;
             } 
+            console.log(`New zoom: ${canvas.style.width}`);
         })
 
 
