@@ -70,13 +70,13 @@ class PlaceAPI {
             event.preventDefault();
             let zoom = parseFloat(canvas.style.width.replace("%","")) || 100;
             console.log(`Current zoom: ${zoom}%`);
-            if (event.wheelDelta > 0 && parseFloat(canvas.style.width.replace("%","")) > 20) {
+            if (event.wheelDelta < 0 && parseFloat(canvas.style.width.replace("%","")) > 20) {
                 let newZoomNum = Math.floor(zoom / 1.1);
                 console.log(`New zoom: ${newZoomNum}`);
                 let newZoom = (newZoomNum) + "%";
                 console.log(`New zoom: ${newZoom}`);
                 canvas.style.width = newZoom;
-            } else if (event.wheelDelta < 0 && parseFloat(canvas.style.width.replace("%","")) < 500) {
+            } else if (event.wheelDelta > 0 && parseFloat(canvas.style.width.replace("%","")) < 500) {
                 let newZoomNum = Math.floor(zoom * 1.1);
                 console.log(`New zoom: ${newZoomNum}`);
                 let newZoom = (newZoomNum) + "%";
