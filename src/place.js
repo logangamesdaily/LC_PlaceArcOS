@@ -12,6 +12,9 @@ class PlaceAPI {
         this.socket = null;
         this.canvas = null;
         this.selectedColor = null;
+        this.selectX = 0;
+        this.selectY = 0;
+        this.pixelCanvas = [];
     }
     
     async getPlaceData() {
@@ -83,6 +86,30 @@ class PlaceAPI {
             console.log(`New zoom: ${canvas.style.width}`);
         })
 
+        canvas.addEventListener('mousedown', (event) => {
+    if (event.button === 0) { // Left mouse button
+        const rect = canvas.getBoundingClientRect(); // Actual rendered dimensions
+
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        const clickX = (event.clientX - rect.left) * scaleX;
+        const clickY = (event.clientY - rect.top) * scaleY;
+
+        this.selectX = Math.floor(clickX);
+        this.selectY = Math.floor(clickY);
+
+        console.log(`Clicked at: (${this.selectX}, ${this.selectY})`);
+
+        let ctx = canvas.getContext('2d');
+
+        ctx.strokeStyle = '#ff0000';
+        ctx.fillRect = '#ff0000';
+        ctx.lineWidth = 0.2;
+
+        ctx.strokeRect(this.selectX, this.selectY, 1, 1);
+    }
+});
 
         let test = await this.getPlaceData();
 
