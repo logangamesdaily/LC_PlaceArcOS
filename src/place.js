@@ -105,7 +105,7 @@ class PlaceAPI {
 
         ctx.strokeStyle = '#ff0000';
         ctx.fillRect = '#ff0000';
-        ctx.lineWidth = 0.2;
+        ctx.lineWidth = 0.2; 
 
         ctx.strokeRect(this.selectX, this.selectY, 1, 1);
     }
