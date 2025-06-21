@@ -7,11 +7,22 @@
         <img src="assets/logo.png" alt="Logo" />
     </div>
     <div class="topbar__title">Place for ArcOS v7</div>
+
+    <div class="topbar__buttons">
+        <button class="topbar__button" id="authButton"> Settings </button>
+    </div>
 </div>
 
 <div class="content">
-    <canvas id="canvas" class="canvas" width="512" height="512"></canvas>   
+    <div id="canvasContainer">
+        <canvas id="canvas" class="canvas" width="5120" height="5120"></canvas>   
+    </div>
 </div>
+
+<div class="placePixelContainer">
+    <button id="placePixelButton" class="placePixelButton">Place Pixel</button>   
+</div>
+
 
 <div class="bottombar">
         <div class="color cff0000"></div>
@@ -26,4 +37,20 @@
         <div class="color cffffff"></div>
         <div class="color c000000"></div>
         <input type="color" class="color picker"> </input>
+</div>
+
+<div class="modal" id="authModal">
+    <div class="modal__content">
+        <h2>Login</h2>
+        <form id="authForm">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required />
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required />
+            </div>
+        </form>
+        <button id="loginButton">Login</button>
+        <button id="closeButton">Close</button>
+    </div>
 </div>

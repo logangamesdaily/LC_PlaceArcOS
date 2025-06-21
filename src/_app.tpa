@@ -3,7 +3,7 @@
     "name": "Place for ArcOS (v7)",
     "version": "1.0.0",
     "author": "Logan Cookson",
-    "icon": "@local:icon.png"
+    "icon": "@local:assets/icon.png"
   },
   "position": {
     "centered": true,

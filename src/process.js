@@ -19,10 +19,20 @@ class proc extends ThirdPartyAppProcess {
 		let body = this.getBody();
 		let canvas = body.querySelector("#canvas");
 
+		const preferences = this.userPreferences();
+
+if (!preferences.appPreferences[app.id]) {
+  this.userPreferences.update((v) => {
+    v.appPreferences[app.id] = {};
+
+    return v;
+  });
+}
+
 		// Check if the process is disposed at the top of every method. This makes sure the process has the least amount of lasting effects.
 		if (this._disposed) return;
 
-		placeAPI.init(canvas, body);
+		placeAPI.init(canvas, body, this.userPreferences, this.app.id, Debug);
 
 		Debug("Working!");
 	}
