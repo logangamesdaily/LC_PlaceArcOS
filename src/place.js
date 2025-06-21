@@ -151,18 +151,13 @@ class PlaceAPI {
         ctx.lineWidth = 0.2; 
 
         ctx.strokeRect(this.selectX, this.selectY, 1, 1);
-    }
-});
-        ctx.lineWidth = 1; // 1 pixel outline
-        ctx.strokeRect(this.selectX * 10 + 1, this.selectY * 10 + 1, 8, 8); // Draw outline
-    }})
 
-        let test = await this.getPlaceData();
+        let test = this.getPlaceData();
 
         console.log(test);
 
        
-        await this.connectToSocketIo();
+        this.connectToSocketIo();
         
 
         this.socket.on('connect', () => {
@@ -207,7 +202,7 @@ class PlaceAPI {
 
         this.login("ArcOS", "ArcOS test account")
         this.Debug("We are logging you in under the ArcOS test account. This will NOT make it to prod.")
-    }
+    }})}
 
     async login(username, password) {
         try {
