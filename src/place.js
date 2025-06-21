@@ -147,6 +147,12 @@ class PlaceAPI {
         let ctx = canvas.getContext('2d');
 
         ctx.strokeStyle = '#ff0000';
+        ctx.fillRect = '#ff0000';
+        ctx.lineWidth = 0.2; 
+
+        ctx.strokeRect(this.selectX, this.selectY, 1, 1);
+    }
+});
         ctx.lineWidth = 1; // 1 pixel outline
         ctx.strokeRect(this.selectX * 10 + 1, this.selectY * 10 + 1, 8, 8); // Draw outline
     }})
