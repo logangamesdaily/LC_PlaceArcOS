@@ -45,7 +45,7 @@
 	flex-grow:1;
 }
 
-#LC_PlaceArcOS > div.body > div.content > div > canvas {
+#LC_PlaceArcOS > div.body > div.content > canvas {
 	image-rendering: pixelated;
 	max-width: 1000%;
 	max-height: 1000%;
@@ -53,17 +53,6 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	width: 100%;
-	height: 100%;
-}
-
-#LC_PlaceArcOS > div.body > div.content > div {
-	overflow: hidden;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	width: fit-content;
-	height: fit-content;
 }
 
 #LC_PlaceArcOS > div.body > div.topbar > div.topbar__logo {
