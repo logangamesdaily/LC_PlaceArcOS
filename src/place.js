@@ -7,8 +7,8 @@ console.log(NeoDrag);
 
 class PlaceAPI {
     constructor() {
-        this.baseURL = 'https://placepixel.online/api/';
-        this.socketUrl = 'https://placepixel.online/';
+        this.baseURL = 'https://place.djcpropertymaintenance.com/api/';
+        this.socketUrl = 'https://place.djcpropertymaintenance.com/';
         this.socket = null;
         this.canvas = null;
         this.selectedColor = null;
@@ -18,6 +18,7 @@ class PlaceAPI {
         this.appPreferences = null;
         this.userPreferences = null; // This should be set to the user preferences object from the app
         this.token = null;
+        this.body = null;
     }
 
     #selectedColor = null;
@@ -34,6 +35,7 @@ class PlaceAPI {
         }
         catch (error) {
             console.error('Error fetching place data:', error);
+            return [];
         }
     }
 
@@ -50,16 +52,53 @@ class PlaceAPI {
         this.Debug = debug;
         this.userPreferences = userPreferences;
         this.canvas = canvas;
+        this.body = body;
 
         body.querySelector("#authButton").addEventListener('click', () => {
-            this.Debug("no settings");
+            if (this.token && this.token !== "null") {
+                body.querySelector("#settingsModal").classList.toggle("shown");
+            } else {
+                body.querySelector("#authModal").classList.toggle("shown");
+            }
         });
 
         body.querySelector("#placePixelButton").addEventListener('click', () => {
             this.placePixel();
         });
 
+        body.querySelector("#closeButton").addEventListener('click', () => {
+            body.querySelector("#authModal").classList.remove("shown");
+        });
+
+        body.querySelector("#closeSettingsButton").addEventListener('click', () => {
+            body.querySelector("#settingsModal").classList.remove("shown");
+        });
+
+        body.querySelector("#logoutButton").addEventListener('click', () => {
+            body.querySelector("#settingsModal").classList.remove("shown");
+            body.querySelector("#authModal").classList.remove("shown");
+            this.token = null;
+            this.userPreferences.update((v) => {
+                this.userPreferences().appPreferences[this.appID].token = null;
+                return v; // <- DO NOT FORGET TO RETURN!!!!
+            });
+        });
+
+        body.querySelector("#loginButton").addEventListener('click', () => {
+            const username = body.querySelector("#username").value;
+            const password = body.querySelector("#password").value;
+            this.login(username, password);
+            body.querySelector("#authModal").classList.remove("shown");
+        });
+
         this.token = this.userPreferences().appPreferences[this.appID].token || null;
+
+        if (this.token) {
+            console.log(`Using token: ${this.token}`);
+        } else {
+            console.log('No token found, please login.');
+        }
+
         body.querySelectorAll(".color").forEach(color => {
             color.addEventListener('click', (event) => {
                 if (!color.className.includes('picker')) {
@@ -197,9 +236,6 @@ class PlaceAPI {
             ctx.fillStyle = `${color}`;
             ctx.fillRect(x * 10, y * 10, 10, 10);
         });
-
-        this.login("ArcOS", "ArcOS test account")
-        this.Debug("We are logging you in under the ArcOS test account. This will NOT make it to prod.")
     }
 
     async login(username, password) {
@@ -221,12 +257,26 @@ class PlaceAPI {
   
                     return v; // <- DO NOT FORGET TO RETURN!!!!
                 })
-
+                this.token = data.token;
             } else {
                 console.error('Login failed:', data);
+                const errorMessage = this.body.querySelector('#errorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = 'Login failed: ' + (data.message || 'Unknown error');
+                } else {
+                    console.error('Error message element not found');
+                }
+                this.body.querySelector("#authModal").classList.add("shown");
             }
         } catch (error) {
             console.error('Error during login:', error);
+                const errorMessage = this.body.querySelector('#errorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = 'Login failed: ' + (error || 'Unknown error');
+                } else {
+                    console.error('Error message element not found');
+                }
+                this.body.querySelector("#authModal").classList.add("shown");
         }
     }
 

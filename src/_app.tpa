@@ -1,9 +1,9 @@
 {
   "metadata": {
     "name": "Place for ArcOS (v7)",
-    "version": "1.0.0",
+    "version": "1.0.0-1",
     "author": "Logan Cookson",
-    "icon": "@local:assets/icon.png"
+    "icon": "@local:icon.png"
   },
   "position": {
     "centered": true,
@@ -38,5 +38,6 @@
   "hidden": false,
   "core": false,
   "entrypoint": "main.js",
-  "id": "LC_PlaceArcOS"
+  "id": "LC_PlaceArcOS",
+  "tpaRevision": 1
 }

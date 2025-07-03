@@ -48,9 +48,18 @@
                 <input type="text" id="username" name="username" required />
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required />
+                <p class="error-message" id="errorMessage"></p>
             </div>
         </form>
         <button id="loginButton">Login</button>
         <button id="closeButton">Close</button>
+    </div>
+</div>
+
+<div class="modal" id="settingsModal">
+    <div class="modal__content">
+        <h2>You are logged in.</h2>
+        <button id="logoutButton">Logout</button>
+        <button id="closeSettingsButton">Close</button>
     </div>
 </div>

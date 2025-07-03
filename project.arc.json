@@ -5,7 +5,10 @@
     "author": "Logan Cookson",
     "version": "1.0.0",
     "installLocation": "U:/Applications/LC_PlaceArcOS",
-    "appId": "LC_PlaceArcOS"
+    "appId": "LC_PlaceArcOS",
+    "store": {
+      "image":"icon.png"
+    }
   },
   "outFile": "LC_PlaceArcOS.arc",
   "payloadDir": "src",
