@@ -1,0 +1,29 @@
+#LC_PlaceArcOS_Login > div.body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#LC_PlaceArcOS_Login > div.body h2 {
+  font-size: 22px;
+}
+
+#LC_PlaceArcOS_Login > div.body div.buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#LC_PlaceArcOS_Login > div.body div.field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+#LC_PlaceArcOS_Login > div.body div.field label {
+  font-weight: bold;
+  opacity: 0.5;
+  width: 70px;
+}

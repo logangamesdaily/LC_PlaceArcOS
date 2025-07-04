@@ -1,151 +1,147 @@
 await load("./lib/socket.io.js");
 await load("./lib/neodrag.js");
-await load
-console.log(io);
-console.log(NeoDrag);
-
+await load;
 
 class PlaceAPI {
-    constructor() {
-        this.baseURL = 'https://place.djcpropertymaintenance.com/api/';
-        this.socketUrl = 'https://place.djcpropertymaintenance.com/';
-        this.socket = null;
-        this.canvas = null;
-        this.selectedColor = null;
-        this.selectX = 0;
-        this.selectY = 0;
-        this.pixelCanvas = [];
-        this.appPreferences = null;
-        this.userPreferences = null; // This should be set to the user preferences object from the app
-        this.token = null;
-        this.body = null;
+  constructor(pid) {
+    this.baseURL = "https://place.djcpropertymaintenance.com/api/";
+    this.socketUrl = "https://place.djcpropertymaintenance.com/";
+    this.socket = null;
+    this.canvas = null;
+    this.selectedColor = null;
+    this.selectX = 0;
+    this.selectY = 0;
+    this.pixelCanvas = [];
+    this.appPreferences = null;
+    this.userPreferences = null; // This should be set to the user preferences object from the app
+    this.token = null;
+    this.body = null;
+    this.pid = pid;
+  }
+
+  #selectedColor = null;
+
+  async getPlaceData() {
+    try {
+      const response = await fetch(`${this.baseURL}/v1/get_pixel.sjs`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      this.pixelCanvas = data;
+      return data;
+    } catch (error) {
+      console.error("Error fetching place data:", error);
+      return [];
     }
+  }
 
-    #selectedColor = null;
-    
-    async getPlaceData() {
-        try {
-            const response = await fetch(`${this.baseURL}/v1/get_pixel.sjs`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            this.pixelCanvas = data;
-            return data;
-        }
-        catch (error) {
-            console.error('Error fetching place data:', error);
-            return [];
-        }
+  async connectToSocketIo() {
+    try {
+      this.socket = io(this.socketUrl);
+    } catch (error) {
+      console.error("Error connecting to Socket.IO:", error);
     }
+  }
 
-    async connectToSocketIo() {
-        try {
-            this.socket = io(this.socketUrl);
-        } catch (error) {
-            console.error('Error connecting to Socket.IO:', error);
+  async init(canvas, body, userPreferences, appID, debug) {
+    this.appID = appID;
+    this.Debug = debug;
+    this.userPreferences = userPreferences;
+    this.canvas = canvas;
+    this.body = body;
+
+    body.querySelector("#authButton").addEventListener("click", () => {
+      if (this.token && this.token !== "null") {
+        this.settingsOverlay();
+      } else {
+        this.loginOverlay();
+      }
+    });
+
+    body.querySelector("#placePixelButton").addEventListener("click", () => {
+      this.placePixel();
+    });
+
+    this.token =
+      this.userPreferences().appPreferences[this.appID].token || null;
+
+    if (this.token)
+      this.Log(this.token ? "Logged in!" : "No token found, please log in.");
+
+    body.querySelectorAll(".color").forEach((color) => {
+      color.addEventListener("click", () => {
+        if (!color.className.includes("picker")) {
+          this.#selectedColor = color.className.replace("color ", "");
         }
-    }
+      });
 
-    async init(canvas, body, userPreferences, appID, debug) {
-        this.appID = appID;
-        this.Debug = debug;
-        this.userPreferences = userPreferences;
-        this.canvas = canvas;
-        this.body = body;
-
-        body.querySelector("#authButton").addEventListener('click', () => {
-            if (this.token && this.token !== "null") {
-                body.querySelector("#settingsModal").classList.toggle("shown");
-            } else {
-                body.querySelector("#authModal").classList.toggle("shown");
-            }
+      if (color.className.includes("picker")) {
+        color.addEventListener("input", (event) => {
+          this.#selectedColor = event.target.value;
         });
+      }
+    });
+    canvas.style.scale = 1;
+    canvas.style.width = "100%";
+    canvas.style.height = "auto";
 
-        body.querySelector("#placePixelButton").addEventListener('click', () => {
-            this.placePixel();
-        });
+    new NeoDrag.Draggable(canvas);
 
-        body.querySelector("#closeButton").addEventListener('click', () => {
-            body.querySelector("#authModal").classList.remove("shown");
-        });
+    canvas.addEventListener("wheel", (event) => {
+      event.preventDefault();
 
-        body.querySelector("#closeSettingsButton").addEventListener('click', () => {
-            body.querySelector("#settingsModal").classList.remove("shown");
-        });
+      const currentZoom =
+        parseFloat(canvas.style.width.replace("%", "")) || 100;
+      const rect = canvas.getBoundingClientRect();
 
-        body.querySelector("#logoutButton").addEventListener('click', () => {
-            body.querySelector("#settingsModal").classList.remove("shown");
-            body.querySelector("#authModal").classList.remove("shown");
-            this.token = null;
-            this.userPreferences.update((v) => {
-                this.userPreferences().appPreferences[this.appID].token = null;
-                return v; // <- DO NOT FORGET TO RETURN!!!!
-            });
-        });
+      // Get cursor position relative to the canvas
+      const canvasCursorX = event.clientX - rect.left;
+      const canvasCursorY = event.clientY - rect.top;
 
-        body.querySelector("#loginButton").addEventListener('click', () => {
-            const username = body.querySelector("#username").value;
-            const password = body.querySelector("#password").value;
-            this.login(username, password);
-            body.querySelector("#authModal").classList.remove("shown");
-        });
+      let newZoom = currentZoom;
 
-        this.token = this.userPreferences().appPreferences[this.appID].token || null;
+      if (event.wheelDelta < 0 && currentZoom > 20) {
+        // Zoom out
+        newZoom = Math.floor(currentZoom / 1.1);
+      } else if (event.wheelDelta > 0 && currentZoom < 1000) {
+        // Zoom in
+        newZoom = Math.floor(currentZoom * 1.1);
+      }
 
-        if (this.token) {
-            console.log(`Using token: ${this.token}`);
-        } else {
-            console.log('No token found, please login.');
-        }
+      if (newZoom !== currentZoom) {
+        // Get current transform values from NeoDrag
+        const currentTransform = canvas.style.transform || "";
+        const translateMatch = currentTransform.match(
+          /translate\(([^,]+),\s*([^)]+)\)/
+        );
 
-        body.querySelectorAll(".color").forEach(color => {
-            color.addEventListener('click', (event) => {
-                if (!color.className.includes('picker')) {
-                    this.#selectedColor = color.className.replace('color ', '');
-                    console.log(`Selected color: ${this.#selectedColor}`);
-                }
-            })
+        let currentTranslateX = 0;
+        let currentTranslateY = 0;
 
-            if (color.className.includes('picker')) {
-                color.addEventListener('input', (event) => {
-                    this.#selectedColor = event.target.value;
-                    console.log(`Selected color: ${this.#selectedColor}`);
-                });
-            }
-        })
-        canvas.style.scale = 1;
-        canvas.style.width = "100%";
-        canvas.style.height = "auto";
-
-        const options = {
-            bounds: "parent",
+        if (translateMatch) {
+          currentTranslateX = parseFloat(translateMatch[1]) || 0;
+          currentTranslateY = parseFloat(translateMatch[2]) || 0;
         }
 
-        var drag = new NeoDrag.Draggable(canvas)
+        // Calculate the size change ratio
+        const zoomRatio = newZoom / currentZoom;
 
-        canvas.addEventListener('wheel', (event) => {
-            event.preventDefault();
-            let zoom = parseFloat(canvas.style.width.replace("%","")) || 100;
-            console.log(`Current zoom: ${zoom}%`);
-            if (event.wheelDelta < 0 && parseFloat(canvas.style.width.replace("%","")) > 20) {
-                let newZoomNum = Math.floor(zoom / 1.1);
-                console.log(`New zoom: ${newZoomNum}`);
-                let newZoom = (newZoomNum) + "%";
-                console.log(`New zoom: ${newZoom}`);
-                canvas.style.width = newZoom;
-            } else if (event.wheelDelta > 0 && parseFloat(canvas.style.width.replace("%","")) < 500) {
-                let newZoomNum = Math.floor(zoom * 1.1);
-                console.log(`New zoom: ${newZoomNum}`);
-                let newZoom = (newZoomNum) + "%";
-                console.log(`New zoom: ${newZoom}`);
-                canvas.style.width = newZoom;
-            } 
-            console.log(`New zoom: ${canvas.style.width}`);
-        })
+        // Calculate new translate values to keep the cursor point fixed
+        const newTranslateX =
+          currentTranslateX + canvasCursorX - canvasCursorX * zoomRatio;
+        const newTranslateY =
+          currentTranslateY + canvasCursorY - canvasCursorY * zoomRatio;
 
-        canvas.addEventListener('mousedown', (event) => {
-    if (event.button === 0) { // Left mouse button
+        // Apply the new zoom and position
+        canvas.style.width = newZoom + "%";
+        canvas.style.transform = `translate(${newTranslateX}px, ${newTranslateY}px)`;
+      }
+    });
+
+    canvas.addEventListener("mousedown", (event) => {
+      if (event.button === 0) {
+        // Left mouse button
         const rect = canvas.getBoundingClientRect(); // Actual rendered dimensions
 
         const scaleX = canvas.width / rect.width;
@@ -156,155 +152,196 @@ class PlaceAPI {
 
         // select last pixel from the last selectX and selectY and draw the pixel again
         if (this.selectX && this.selectY) {
-            const ctx = canvas.getContext('2d');
-            let drewPixel = false;
-            // Check if the pixel exists in the pixelCanvas
-            this.pixelCanvas.forEach(pixel => {
-                if (pixel.x === this.selectX && pixel.y === this.selectY) {
-                    let color = pixel.color;
-                    if (color.startsWith('c')) {
-                        color = color.replace("c", "#");
-                    }
-                    ctx.fillStyle = `${color}`;
-                    ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
-                    console.log(`Redrawing pixel at: (${this.selectX}, ${this.selectY}) with color: ${color}`);
-                    drewPixel = true;
-                }
-            })
-            if (!drewPixel) {
-                    ctx.fillStyle = `#FFFFFF`;
-                    ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
+          const ctx = canvas.getContext("2d");
+          let drewPixel = false;
+          // Check if the pixel exists in the pixelCanvas
+          this.pixelCanvas.forEach((pixel) => {
+            if (pixel.x === this.selectX && pixel.y === this.selectY) {
+              let color = pixel.color;
+              if (color.startsWith("c")) {
+                color = color.replace("c", "#");
+              }
+              ctx.fillStyle = `${color}`;
+              ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
+              drewPixel = true;
             }
+          });
+          if (!drewPixel) {
+            ctx.fillStyle = `#FFFFFF`;
+            ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
+          }
         }
 
         this.selectX = Math.floor(clickX / 10);
         this.selectY = Math.floor(clickY / 10);
 
-        console.log(`Clicked at: (${this.selectX}, ${this.selectY})`);
+        let ctx = canvas.getContext("2d");
 
-        let ctx = canvas.getContext('2d');
-
-        ctx.strokeStyle = '#ff0000';
+        ctx.strokeStyle = "#ff0000";
         ctx.lineWidth = 1; // 1 pixel outline
         ctx.strokeRect(this.selectX * 10 + 1, this.selectY * 10 + 1, 8, 8); // Draw outline
-    }})
+      }
+    });
 
-        let test = await this.getPlaceData();
+    let test = await this.getPlaceData();
 
-        console.log(test);
+    await this.connectToSocketIo();
 
-       
-        await this.connectToSocketIo();
-        
+    this.socket.on("connect", () => {
+      this.Log("Connected to Socket.IO");
+    });
 
-        this.socket.on('connect', () => {
-            console.log('Connected to Socket.IO');
+    this.socket.on("disconnect", () => {
+      this.Log("Socket.IO disconnected!");
+
+      this.connectToSocketIo();
+    });
+
+    this.socket.on("placePixel", (data) => {
+      let { x, y, color } = data;
+      let ctx = canvas.getContext("2d");
+      if (color.startsWith("c")) {
+        color = color.replace("c", "#");
+      }
+      ctx.fillStyle = `${color}`;
+      ctx.fillRect(x * 10, y * 10, 10, 10);
+
+      this.pixelCanvas.push(data);
+    });
+
+    canvas.getContext("2d").fillStyle = "white";
+    canvas.getContext("2d").fillRect(0, 0, canvas.width, canvas.height);
+
+    test.forEach((pixel) => {
+      const x = pixel.x;
+      const y = pixel.y;
+      let color = pixel.color;
+
+      if (color.startsWith("c")) {
+        color = color.replace("c", "#");
+      }
+
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = `${color}`;
+      ctx.fillRect(x * 10, y * 10, 10, 10);
+    });
+  }
+
+  async login(username, password) {
+    try {
+      const response = await fetch(
+        `${this.baseURL}/v2/login.sjs?username=${username}&password=${password}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.token) {
+        this.userPreferences.update((v) => {
+          v.appPreferences[this.appID].token = data.token;
+
+          return v; // <- DO NOT FORGET TO RETURN!!!!
         });
+        this.token = data.token;
+      } else {
+        await MessageBox(
+          {
+            title: "Login failed!",
+            message: `Your username or password might be incorrect.<br><br><b>Details</b>: ${
+              data.message || "Unknown error"
+            }`,
+            image: icons.ErrorIcon,
+            buttons: [
+              {
+                caption: "Okay",
+                action: () => {
+                  this.loginOverlay();
+                },
+                suggested: true,
+              },
+            ],
+          },
+          this.pid,
+          true
+        );
+        console.error("Login failed:", data);
+      }
+    } catch (error) {
+      await MessageBox(
+        {
+          title: "Login failed!",
+          message: `Your username or password might be incorrect.<br><br><b>Details</b>: ${
+            error || "Unknown error"
+          }`,
+          image: icons.ErrorIcon,
+          buttons: [
+            {
+              caption: "Okay",
+              action: () => {
+                this.loginOverlay();
+              },
+              suggested: true,
+            },
+          ],
+        },
+        this.pid,
+        true
+      );
+      console.error("Error during login:", error);
+    }
+  }
 
-        this.socket.on('disconnect', () => {
-            console.log('Disconnected from Socket.IO');
-            this.connectToSocketIo();
-        });
-
-        this.socket.on('placePixel', (data) => {
-            console.log('Received placePixel event:', data);
-            let { x, y, color } = data;
-            let ctx = canvas.getContext('2d');
-            if (color.startsWith('c')) {
-                color = color.replace("c", "#");
-            }
-            ctx.fillStyle = `${color}`;
-            ctx.fillRect(x * 10, y * 10, 10, 10);
-
-            this.pixelCanvas.push(data);
-            console.log(`Placed pixel at: (${x}, ${y}) with color: ${color}`);
-        });
-
-        canvas.getContext('2d').fillStyle = 'white';
-        canvas.getContext('2d').fillRect(0, 0, canvas.width, canvas.height);
-
-        test.forEach(pixel => {
-            const x = pixel.x;
-            const y = pixel.y;
-            let color = pixel.color;
-
-            if (color.startsWith('c')) {
-                color = color.replace("c", "#");
-            }
-
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = `${color}`;
-            ctx.fillRect(x * 10, y * 10, 10, 10);
-        });
+  async placePixel() {
+    if (this.#selectedColor == null) {
+      console.error("No color selected");
+      return;
+    }
+    if (!this.selectX || !this.selectY) {
+      console.error("No pixel selected");
+      return;
     }
 
-    async login(username, password) {
-        try {
-            const response = await fetch(`${this.baseURL}/v2/login.sjs?username=${username}&password=${password}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            if (data.token) {
-                console.log('Login successful');
-                this.userPreferences.update((v) => {
-                    this.userPreferences().appPreferences[this.appID].token = data.token;
-  
-                    return v; // <- DO NOT FORGET TO RETURN!!!!
-                })
-                this.token = data.token;
-            } else {
-                console.error('Login failed:', data);
-                const errorMessage = this.body.querySelector('#errorMessage');
-                if (errorMessage) {
-                    errorMessage.textContent = 'Login failed: ' + (data.message || 'Unknown error');
-                } else {
-                    console.error('Error message element not found');
-                }
-                this.body.querySelector("#authModal").classList.add("shown");
-            }
-        } catch (error) {
-            console.error('Error during login:', error);
-                const errorMessage = this.body.querySelector('#errorMessage');
-                if (errorMessage) {
-                    errorMessage.textContent = 'Login failed: ' + (error || 'Unknown error');
-                } else {
-                    console.error('Error message element not found');
-                }
-                this.body.querySelector("#authModal").classList.add("shown");
-        }
+    const data = {
+      x: this.selectX,
+      y: this.selectY,
+      color: this.#selectedColor,
+      token: this.token,
+    };
+
+    try {
+      this.socket.emit("placePixel", data);
+    } catch (error) {
+      console.error("Error placing pixel:", error);
     }
+  }
 
-    async placePixel() {
-        console.log(this.#selectedColor)
-        if (this.#selectedColor == null) {
-            console.error('No color selected');
-            return;
-        }
-        if (!this.selectX || !this.selectY) {
-            console.error('No pixel selected');
-            return;
-        }
+  async loginOverlay() {
+    const path = util.join(workingDirectory, "overlay/login/login.tpa");
 
-        const data = {
-            x: this.selectX,
-            y: this.selectY,
-            color: this.#selectedColor,
-            token: this.token
-        };
+    const text = convert.arrayToText(await fs.readFile(path));
+    const json = JSON.parse(text);
 
-        try {
-            this.socket.emit('placePixel', data);
-            console.log(`Placing pixel at (${this.selectX}, ${this.selectY}) with color ${this.#selectedColor}`);
-        } catch (error) {
-            console.error('Error placing pixel:', error);
-        }
-    }
+    if (typeof json !== "object") return;
+
+    await daemon.spawnThirdParty(json, path, this.pid);
+  }
+
+  async settingsOverlay() {
+    const path = util.join(workingDirectory, "overlay/settings/settings.tpa");
+
+    const text = convert.arrayToText(await fs.readFile(path));
+    const json = JSON.parse(text);
+
+    if (typeof json !== "object") return;
+
+    await daemon.spawnThirdParty(json, path, this.pid);
+  }
 }
 
 return { PlaceAPI: PlaceAPI };
