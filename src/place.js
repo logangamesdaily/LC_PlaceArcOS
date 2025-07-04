@@ -17,6 +17,9 @@ class PlaceAPI {
     this.token = null;
     this.body = null;
     this.pid = pid;
+
+    this.parent = handler.getProcess(pid);
+    this.Log = this.parent.Log.bind(this.parent);
   }
 
   #selectedColor = null;
