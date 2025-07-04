@@ -1,8 +1,6 @@
 await load("./lib/socket.io.js");
 await load("./lib/neodrag.js");
 await load;
-console.log(io);
-console.log(NeoDrag);
 
 class PlaceAPI {
   constructor(pid) {
@@ -68,24 +66,19 @@ class PlaceAPI {
     this.token =
       this.userPreferences().appPreferences[this.appID].token || null;
 
-    if (this.token) {
-      console.log(`Using token: ${this.token}`);
-    } else {
-      console.log("No token found, please login.");
-    }
+    if (this.token)
+      this.Log(this.token ? "Logged in!" : "No token found, please log in.");
 
     body.querySelectorAll(".color").forEach((color) => {
       color.addEventListener("click", () => {
         if (!color.className.includes("picker")) {
           this.#selectedColor = color.className.replace("color ", "");
-          console.log(`Selected color: ${this.#selectedColor}`);
         }
       });
 
       if (color.className.includes("picker")) {
         color.addEventListener("input", (event) => {
           this.#selectedColor = event.target.value;
-          console.log(`Selected color: ${this.#selectedColor}`);
         });
       }
     });
@@ -108,8 +101,6 @@ class PlaceAPI {
 
       let newZoom = currentZoom;
 
-      console.log(`Current zoom: ${currentZoom}%`);
-
       if (event.wheelDelta < 0 && currentZoom > 20) {
         // Zoom out
         newZoom = Math.floor(currentZoom / 1.1);
@@ -119,8 +110,6 @@ class PlaceAPI {
       }
 
       if (newZoom !== currentZoom) {
-        console.log(`New zoom: ${newZoom}%`);
-
         // Get current transform values from NeoDrag
         const currentTransform = canvas.style.transform || "";
         const translateMatch = currentTransform.match(
@@ -147,10 +136,6 @@ class PlaceAPI {
         // Apply the new zoom and position
         canvas.style.width = newZoom + "%";
         canvas.style.transform = `translate(${newTranslateX}px, ${newTranslateY}px)`;
-
-        console.log(
-          `New zoom: ${canvas.style.width}, Transform: translate(${newTranslateX}px, ${newTranslateY}px)`
-        );
       }
     });
 
@@ -178,9 +163,6 @@ class PlaceAPI {
               }
               ctx.fillStyle = `${color}`;
               ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
-              console.log(
-                `Redrawing pixel at: (${this.selectX}, ${this.selectY}) with color: ${color}`
-              );
               drewPixel = true;
             }
           });
@@ -193,8 +175,6 @@ class PlaceAPI {
         this.selectX = Math.floor(clickX / 10);
         this.selectY = Math.floor(clickY / 10);
 
-        console.log(`Clicked at: (${this.selectX}, ${this.selectY})`);
-
         let ctx = canvas.getContext("2d");
 
         ctx.strokeStyle = "#ff0000";
@@ -205,21 +185,19 @@ class PlaceAPI {
 
     let test = await this.getPlaceData();
 
-    console.log(test);
-
     await this.connectToSocketIo();
 
     this.socket.on("connect", () => {
-      console.log("Connected to Socket.IO");
+      this.Log("Connected to Socket.IO");
     });
 
     this.socket.on("disconnect", () => {
-      console.log("Disconnected from Socket.IO");
+      this.Log("Socket.IO disconnected!");
+
       this.connectToSocketIo();
     });
 
     this.socket.on("placePixel", (data) => {
-      console.log("Received placePixel event:", data);
       let { x, y, color } = data;
       let ctx = canvas.getContext("2d");
       if (color.startsWith("c")) {
@@ -229,7 +207,6 @@ class PlaceAPI {
       ctx.fillRect(x * 10, y * 10, 10, 10);
 
       this.pixelCanvas.push(data);
-      console.log(`Placed pixel at: (${x}, ${y}) with color: ${color}`);
     });
 
     canvas.getContext("2d").fillStyle = "white";
@@ -266,7 +243,6 @@ class PlaceAPI {
       }
       const data = await response.json();
       if (data.token) {
-        console.log("Login successful");
         this.userPreferences.update((v) => {
           v.appPreferences[this.appID].token = data.token;
 
@@ -322,7 +298,6 @@ class PlaceAPI {
   }
 
   async placePixel() {
-    console.log(this.#selectedColor);
     if (this.#selectedColor == null) {
       console.error("No color selected");
       return;
@@ -341,11 +316,6 @@ class PlaceAPI {
 
     try {
       this.socket.emit("placePixel", data);
-      console.log(
-        `Placing pixel at (${this.selectX}, ${this.selectY}) with color ${
-          this.#selectedColor
-        }`
-      );
     } catch (error) {
       console.error("Error placing pixel:", error);
     }

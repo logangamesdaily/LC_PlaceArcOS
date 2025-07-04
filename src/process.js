@@ -10,13 +10,7 @@ class proc extends ThirdPartyAppProcess {
     const body = this.getBody();
     body.innerHTML = html;
 
-    /* Do some interesting stuff here */
-    this.myAmazingFunction();
-  }
-
-  myAmazingFunction() {
     this.place = new PlaceAPI(this.pid);
-    let body = this.getBody();
     let canvas = body.querySelector("#canvas");
 
     const preferences = this.userPreferences();
@@ -32,11 +26,7 @@ class proc extends ThirdPartyAppProcess {
     // Check if the process is disposed at the top of every method. This makes sure the process has the least amount of lasting effects.
     if (this._disposed) return;
 
-    console.log(canvas);
-
     this.place.init(canvas, body, this.userPreferences, this.app.id, Debug);
-
-    Debug("Working!");
   }
 }
 
