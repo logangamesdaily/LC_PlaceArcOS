@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "name": "Place for ArcOS (v7)",
-    "description": "An official client for https://placepixel.online/ for ArcOS v7!",
+    "name": "Place for ArcOS",
+    "description": "An official client for https://placepixel.online/ for ArcOS!",
     "author": "Logan Cookson",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "installLocation": "U:/Applications/LC_PlaceArcOS",
     "appId": "LC_PlaceArcOS",
     "store": {
-      "image":"icon.png"
+      "image": "icon.png"
     }
   },
   "outFile": "LC_PlaceArcOS.arc",
