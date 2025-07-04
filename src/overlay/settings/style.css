@@ -1,0 +1,13 @@
+#LC_PlaceArcOS_Settings > div.body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#LC_PlaceArcOS_Settings > div.body div.buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
