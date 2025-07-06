@@ -1,8 +1,8 @@
 # Place for ArcOS!
-This is an **official** client for Logan's Place website, which is *currently* only accessible through ArcOS (we're working on this!)
+This is an **official** client for Logan's Place website, which is accessible [here](https://place.uk.to/)
 
 # How to use?
-First, you need a Rise account. You can sign up at [aud.is-a.dev/r/account/](https://aud.is-a.dev/r/account/), and then you can sign in to the app using your username/email and password.
+First, you need a Rise account. You can sign up on the website [place.uk.to](https://place.uk.to/), and then you can sign in to the app using your username/email and password.
 
 # Are there any limitations compared to using the web app?
 This app is styled to fit within ArcOS rather than on it's own, so there isn't any theme selection like the site, and you can't *currently* register an account through the app. You also *currently* cannot view which user has placed pixels, but there are no ads from me (Kofi ad, Rise ads etc.)

@@ -4,8 +4,8 @@ await load;
 
 class PlaceAPI {
   constructor(pid) {
-    this.baseURL = "https://place.djcpropertymaintenance.com/api/";
-    this.socketUrl = "https://place.djcpropertymaintenance.com/";
+    this.baseURL = "https://place.uk.to/api/";
+    this.socketUrl = "https://place.uk.to/";
     this.socket = null;
     this.canvas = null;
     this.selectedColor = null;

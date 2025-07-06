@@ -1,9 +1,10 @@
 {
   "metadata": {
-    "name": "Place for ArcOS (v7)",
-    "version": "1.0.1",
+    "name": "Place for ArcOS",
+    "version": "1.0.3",
     "author": "Logan Cookson",
-    "icon": "@local:icon.png"
+    "icon": "@local:icon.png",
+    "appGroup": "entertainment"
   },
   "position": {
     "centered": true,
