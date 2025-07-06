@@ -10,3 +10,16 @@ This app is styled to fit within ArcOS rather than on it's own, so there isn't a
 # Is this related to the Place website client?
 Well yes, but actually no. This app was a complete rewrite from scratch whilst using the same endpoints and servers as the main site, but **does not share any code**, really. It is also open source, and since I've written the PlaceAPI in a certain way, if you remove the ArcOS specific bits for saving your token to ArcOS, it is completely portable, incase you want to make your *own client*. I'm also planning to completely open source everything else relating to place in the following weeks, and add a custom server selector to ArcOS' official place client. Stay tuned!
 This client is available [here](https://github.com/An-Unnamed-Developer/LC_PlaceArcOS/)
+
+
+# Changelog
+- 1.0.4
+> Add double clicking (Izaak Kuipers' suggestion)
+- 1.0.3
+> Change URL from temp one, some clean up
+- 1.0.2
+> fix logging (Committed by Izaak Kuipers)
+- 1.0.1
+> Move login and settings over to seperate overlays that run independently
+- 1.0.0
+> Inital release

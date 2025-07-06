@@ -20,6 +20,7 @@ class PlaceAPI {
 
     this.parent = handler.getProcess(pid);
     this.Log = this.parent.Log.bind(this.parent);
+    this.clickOnce = false;
   }
 
   #selectedColor = null;
@@ -174,9 +175,21 @@ class PlaceAPI {
             ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
           }
         }
+        if (this.clickOnce == true && this.selectX == clickX && this.selectY == clickY) {
+
+            this.selectX = Math.floor(clickX / 10);
+            this.selectY = Math.floor(clickY / 10);
+            this.clickOnce = false;
+
+            this.placePixel();
+        } else {
+            this.clickOnce = true;
+            setTimeout(() => {this.clickOnce = false;}, 100)
+        }
 
         this.selectX = Math.floor(clickX / 10);
         this.selectY = Math.floor(clickY / 10);
+
 
         let ctx = canvas.getContext("2d");
 
