@@ -20,6 +20,6 @@ This client is available [here](https://github.com/An-Unnamed-Developer/LC_Place
 - 1.0.2
 > fix logging (Committed by Izaak Kuipers)
 - 1.0.1
-> Move login and settings over to seperate overlays that run independently
+> Move login and settings over to seperate overlays that run independently (Committed by Izaak Kuipers)
 - 1.0.0
 > Inital release
