@@ -154,6 +154,19 @@ class PlaceAPI {
         const clickX = (event.clientX - rect.left) * scaleX;
         const clickY = (event.clientY - rect.top) * scaleY;
 
+
+        if (this.clickOnce == true && this.selectX == Math.floor(clickX/10) && this.selectY == Math.floor(clickY/10)) {
+
+            this.selectX = Math.floor(clickX / 10);
+            this.selectY = Math.floor(clickY / 10);
+            this.clickOnce = false;
+
+            this.placePixel();
+        } else {
+            this.clickOnce = true;
+            setTimeout(() => {this.clickOnce = false;}, 250)
+        }
+
         // select last pixel from the last selectX and selectY and draw the pixel again
         if (this.selectX && this.selectY) {
           const ctx = canvas.getContext("2d");
@@ -174,17 +187,6 @@ class PlaceAPI {
             ctx.fillStyle = `#FFFFFF`;
             ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
           }
-        }
-        if (this.clickOnce == true && this.selectX == clickX && this.selectY == clickY) {
-
-            this.selectX = Math.floor(clickX / 10);
-            this.selectY = Math.floor(clickY / 10);
-            this.clickOnce = false;
-
-            this.placePixel();
-        } else {
-            this.clickOnce = true;
-            setTimeout(() => {this.clickOnce = false;}, 100)
         }
 
         this.selectX = Math.floor(clickX / 10);

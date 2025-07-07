@@ -13,6 +13,12 @@ This client is available [here](https://github.com/An-Unnamed-Developer/LC_Place
 
 
 # Changelog
+- 1.0.7
+> i actually fixed double clicking this time 
+- 1.0.6
+> fix double clicking again
+- 1.0.5
+> fix double clicking
 - 1.0.4
 > Add double clicking (Izaak Kuipers' suggestion)
 - 1.0.3
