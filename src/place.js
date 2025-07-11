@@ -17,6 +17,7 @@ class PlaceAPI {
     this.token = null;
     this.body = null;
     this.pid = pid;
+    this.canvasID = "arcos";
 
     this.parent = handler.getProcess(pid);
     this.Log = this.parent.Log.bind(this.parent);
@@ -27,7 +28,7 @@ class PlaceAPI {
 
   async getPlaceData() {
     try {
-      const response = await fetch(`${this.baseURL}/v1/get_pixel.sjs`);
+      const response = await fetch(`${this.baseURL}/v1/get_pixel.sjs?canvas=${this.canvasID}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -212,6 +213,8 @@ class PlaceAPI {
       this.Log("Connected to Socket.IO");
 
       disconnectedDiv.classList.add("hidden");
+
+      this.resetCanvas();
     });
 
     this.socket.on("disconnect", () => {
@@ -353,6 +356,7 @@ class PlaceAPI {
       y: this.selectY,
       color: this.#selectedColor,
       token: this.token,
+      canvas: this.canvasID,
     };
 
     try {
@@ -382,6 +386,28 @@ class PlaceAPI {
     if (typeof json !== "object") return;
 
     await daemon.spawnThirdParty(json, path, this.pid);
+  }
+
+  
+  async resetCanvas() {
+    let canvas = this.canvas;
+    let test = await this.getPlaceData();this.pixelCanvas = test;
+      canvas.getContext("2d").fillStyle = "white";
+    canvas.getContext("2d").fillRect(0, 0, canvas.width, canvas.height);
+
+    test.forEach((pixel) => {
+      const x = pixel.x;
+      const y = pixel.y;
+      let color = pixel.color;
+
+      if (color.startsWith("c")) {
+        color = color.replace("c", "#");
+      }
+
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = `${color}`;
+      ctx.fillRect(x * 10, y * 10, 10, 10);
+    });
   }
 }
 
