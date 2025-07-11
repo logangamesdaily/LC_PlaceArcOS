@@ -196,3 +196,28 @@
 	text-align: center;
 	color: red;
 }
+
+
+#LC_PlaceArcOS > div.body > div.fullscreen.hidden {
+    visibility: collapse;
+}
+#LC_PlaceArcOS > div.body > div.fullscreen {
+    position: fixed;
+	top: 0;
+	visibility: visible;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.3);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 50;
+	backdrop-filter: blur(5px);
+	flex-direction: column;
+}
+
+#LC_PlaceArcOS > div.body > div.fullscreen > h1 {
+    font-size: large;
+	text-align: center;
+}

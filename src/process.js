@@ -12,6 +12,7 @@ class proc extends ThirdPartyAppProcess {
 
     this.place = new PlaceAPI(this.pid);
     let canvas = body.querySelector("#canvas");
+    let disconnectScreen = body.querySelector("#disconnected");
 
     const preferences = this.userPreferences();
 
@@ -26,7 +27,7 @@ class proc extends ThirdPartyAppProcess {
     // Check if the process is disposed at the top of every method. This makes sure the process has the least amount of lasting effects.
     if (this._disposed) return;
 
-    this.place.init(canvas, body, this.userPreferences, this.app.id, Debug);
+    this.place.init(canvas, body, this.userPreferences, this.app.id, Debug, disconnectScreen);
   }
 }
 

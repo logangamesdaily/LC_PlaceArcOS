@@ -48,7 +48,7 @@ class PlaceAPI {
     }
   }
 
-  async init(canvas, body, userPreferences, appID, debug) {
+  async init(canvas, body, userPreferences, appID, debug, disconnectedDiv) {
     this.appID = appID;
     this.Debug = debug;
     this.userPreferences = userPreferences;
@@ -168,12 +168,14 @@ class PlaceAPI {
         }
 
         // select last pixel from the last selectX and selectY and draw the pixel again
-        if (this.selectX && this.selectY) {
+        if ((this.selectX && this.selectY) || (this.selectX == 0 && this.selectY == 0) ||  (this.selectX == 0 && this.selectY) || (this.selectX && this.selectY == 0)) {
+          
           const ctx = canvas.getContext("2d");
           let drewPixel = false;
           // Check if the pixel exists in the pixelCanvas
           this.pixelCanvas.forEach((pixel) => {
             if (pixel.x === this.selectX && pixel.y === this.selectY) {
+              
               let color = pixel.color;
               if (color.startsWith("c")) {
                 color = color.replace("c", "#");
@@ -186,6 +188,7 @@ class PlaceAPI {
           if (!drewPixel) {
             ctx.fillStyle = `#FFFFFF`;
             ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
+              
           }
         }
 
@@ -207,12 +210,15 @@ class PlaceAPI {
 
     this.socket.on("connect", () => {
       this.Log("Connected to Socket.IO");
+
+      disconnectedDiv.classList.add("hidden");
     });
 
     this.socket.on("disconnect", () => {
       this.Log("Socket.IO disconnected!");
 
       this.connectToSocketIo();
+      disconnectedDiv.classList.remove("hidden");
     });
 
     this.socket.on("placePixel", (data) => {
@@ -315,12 +321,29 @@ class PlaceAPI {
     }
   }
 
+  async getUserFromUserID(userID) {
+    let username;
+    fetch("https://place.uk.to/api/v2/getuserinfo.sjs?id="+userID)
+    .then((response) => {
+      try {
+        username = JSON.parse(response.text)["user"]
+      } catch {
+        username = false;
+      }
+    }) 
+    if (username != false && username) {
+      return username;
+    } else {
+      return false;
+    }
+  }
+
   async placePixel() {
     if (this.#selectedColor == null) {
       console.error("No color selected");
       return;
     }
-    if (!this.selectX || !this.selectY) {
+    if ((!this.selectX || !this.selectY) && (this.selectX != 0 && this.selectY != 0)) {
       console.error("No pixel selected");
       return;
     }
