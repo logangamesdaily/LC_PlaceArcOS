@@ -156,27 +156,27 @@ class PlaceAPI {
         const clickY = (event.clientY - rect.top) * scaleY;
 
 
-        if (this.clickOnce == true && this.selectX == Math.floor(clickX/10) && this.selectY == Math.floor(clickY/10)) {
+        if (this.clickOnce == true && this.selectX == Math.floor(clickX / 10) && this.selectY == Math.floor(clickY / 10)) {
 
-            this.selectX = Math.floor(clickX / 10);
-            this.selectY = Math.floor(clickY / 10);
-            this.clickOnce = false;
+          this.selectX = Math.floor(clickX / 10);
+          this.selectY = Math.floor(clickY / 10);
+          this.clickOnce = false;
 
-            this.placePixel();
+          this.placePixel();
         } else {
-            this.clickOnce = true;
-            setTimeout(() => {this.clickOnce = false;}, 250)
+          this.clickOnce = true;
+          setTimeout(() => { this.clickOnce = false; }, 250)
         }
 
         // select last pixel from the last selectX and selectY and draw the pixel again
-        if ((this.selectX && this.selectY) || (this.selectX == 0 && this.selectY == 0) ||  (this.selectX == 0 && this.selectY) || (this.selectX && this.selectY == 0)) {
-          
+        if ((this.selectX && this.selectY) || (this.selectX == 0 && this.selectY == 0) || (this.selectX == 0 && this.selectY) || (this.selectX && this.selectY == 0)) {
+
           const ctx = canvas.getContext("2d");
           let drewPixel = false;
           // Check if the pixel exists in the pixelCanvas
           this.pixelCanvas.forEach((pixel) => {
             if (pixel.x === this.selectX && pixel.y === this.selectY) {
-              
+
               let color = pixel.color;
               if (color.startsWith("c")) {
                 color = color.replace("c", "#");
@@ -189,7 +189,7 @@ class PlaceAPI {
           if (!drewPixel) {
             ctx.fillStyle = `#FFFFFF`;
             ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
-              
+
           }
         }
 
@@ -252,6 +252,8 @@ class PlaceAPI {
       ctx.fillStyle = `${color}`;
       ctx.fillRect(x * 10, y * 10, 10, 10);
     });
+
+    this.resetCanvas();
   }
 
   async login(username, password) {
@@ -280,9 +282,8 @@ class PlaceAPI {
         await MessageBox(
           {
             title: "Login failed!",
-            message: `Your username or password might be incorrect.<br><br><b>Details</b>: ${
-              data.message || "Unknown error"
-            }`,
+            message: `Your username or password might be incorrect.<br><br><b>Details</b>: ${data.message || "Unknown error"
+              }`,
             image: icons.ErrorIcon,
             buttons: [
               {
@@ -303,9 +304,8 @@ class PlaceAPI {
       await MessageBox(
         {
           title: "Login failed!",
-          message: `Your username or password might be incorrect.<br><br><b>Details</b>: ${
-            error || "Unknown error"
-          }`,
+          message: `Your username or password might be incorrect.<br><br><b>Details</b>: ${error || "Unknown error"
+            }`,
           image: icons.ErrorIcon,
           buttons: [
             {
@@ -326,14 +326,14 @@ class PlaceAPI {
 
   async getUserFromUserID(userID) {
     let username;
-    fetch("https://place.uk.to/api/v2/getuserinfo.sjs?id="+userID)
-    .then((response) => {
-      try {
-        username = JSON.parse(response.text)["user"]
-      } catch {
-        username = false;
-      }
-    }) 
+    fetch("https://place.uk.to/api/v2/getuserinfo.sjs?id=" + userID)
+      .then((response) => {
+        try {
+          username = JSON.parse(response.text)["user"]
+        } catch {
+          username = false;
+        }
+      })
     if (username != false && username) {
       return username;
     } else {
@@ -388,25 +388,121 @@ class PlaceAPI {
     await daemon.spawnThirdParty(json, path, this.pid);
   }
 
-  
+
   async resetCanvas() {
     let canvas = this.canvas;
-    let test = await this.getPlaceData();this.pixelCanvas = test;
-      canvas.getContext("2d").fillStyle = "white";
-    canvas.getContext("2d").fillRect(0, 0, canvas.width, canvas.height);
 
-    test.forEach((pixel) => {
-      const x = pixel.x;
-      const y = pixel.y;
-      let color = pixel.color;
+    let http = new XMLHttpRequest();
 
-      if (color.startsWith("c")) {
-        color = color.replace("c", "#");
+    http.open("GET", `${this.baseURL}/v3/getCanvasInfo?canvas=${this.canvasID}`, true);
+
+    http.onload = async () => {
+      if (http.status >= 200 && http.status < 300) {
+        const canvasInfo = JSON.parse(http.responseText)[0];
+        canvas.width = canvasInfo.width * 10; // Assuming each pixel is 10x10
+        canvas.height = canvasInfo.height * 10; // Assuming each pixel is 10x10
+
+        let test = await this.getPlaceData(); this.pixelCanvas = test;
+        canvas.getContext("2d").fillStyle = "white";
+        canvas.getContext("2d").fillRect(0, 0, canvas.width, canvas.height);
+
+        test.forEach((pixel) => {
+          const x = pixel.x;
+          const y = pixel.y;
+          let color = pixel.color;
+
+          if (color.startsWith("c")) {
+            color = color.replace("c", "#");
+          }
+
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = `${color}`;
+          ctx.fillRect(x * 10, y * 10, 10, 10);
+        });
       }
+      else {
+        console.error("Failed to fetch canvas info:", http.statusText);
+        return;
+      }
+    }
 
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = `${color}`;
-      ctx.fillRect(x * 10, y * 10, 10, 10);
+    http.send();
+
+
+  }
+
+  async getCanvasList() {
+    let http = new XMLHttpRequest();
+    http.open("GET", `${this.baseURL}/v3/getPublicCanvasList`, true);
+
+    http.onload = () => {
+      if (http.status >= 200 && http.status < 300) {
+        let canvases = JSON.parse(http.responseText)[0];
+        let arcOSCanvas = this.getCanvasDetails("arcos");
+        canvases.append(arcOSCanvas);
+        return canvases;
+      } else {
+        console.error("Failed to fetch canvas list:", http.statusText);
+        return [];
+      }
+    }
+  }
+
+  async applyCanvas(canvasID) {
+    let http = new XMLHttpRequest();
+    this.canvasID = canvasID;
+
+    http.open("GET", `${this.baseURL}/v3/getCanvasInfo?canvas=${this.canvasID}`, true);
+
+    http.onload = async () => {
+      if (http.status >= 200 && http.status < 300) {
+        const canvasInfo = JSON.parse(http.responseText)[0];
+        canvas.width = canvasInfo.width * 10; // Assuming each pixel is 10x10
+        canvas.height = canvasInfo.height * 10; // Assuming each pixel is 10x10
+
+        let test = await this.getPlaceData(); this.pixelCanvas = test;
+        canvas.getContext("2d").fillStyle = "white";
+        canvas.getContext("2d").fillRect(0, 0, canvas.width, canvas.height);
+
+        test.forEach((pixel) => {
+          const x = pixel.x;
+          const y = pixel.y;
+          let color = pixel.color;
+
+          if (color.startsWith("c")) {
+            color = color.replace("c", "#");
+          }
+
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = `${color}`;
+          ctx.fillRect(x * 10, y * 10, 10, 10);
+        });
+      }
+      else {
+        console.error("Failed to fetch canvas info:", http.statusText);
+        return;
+      }
+    }
+
+    http.send();
+  }
+
+  async getCanvasDetails(canvasID) {
+    let http = new XMLHttpRequest();
+    http.open("GET", `${this.baseURL}/v3/getCanvasInfo?canvas=${canvasID}`, true);
+
+    return new Promise((resolve, reject) => {
+      http.onload = () => {
+        if (http.status >= 200 && http.status < 300) {
+          const canvasInfo = JSON.parse(http.responseText)[0];
+          resolve(canvasInfo);
+        } else {
+          console.error("Failed to fetch canvas details:", http.statusText);
+          reject(new Error("Failed to fetch canvas details"));
+        }
+      };
+      http.onerror = () => reject(new Error("Network error"));
+      http.send();
     });
   }
 }
