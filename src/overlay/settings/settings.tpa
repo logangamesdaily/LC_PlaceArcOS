@@ -9,16 +9,16 @@
     "centered": true
   },
   "size": {
-    "w": 200,
-    "h": 120
+    "w": 400,
+    "h": 300
   },
   "minSize": {
-    "w": 200,
-    "h": 120
+    "w": 400,
+    "h": 300
   },
   "maxSize": {
-    "w": 200,
-    "h": 120
+    "w": 400,
+    "h": 300
   },
   "state": {
     "maximized": false,
