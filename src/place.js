@@ -17,7 +17,8 @@ class PlaceAPI {
     this.token = null;
     this.body = null;
     this.pid = pid;
-    this.canvasID = "arcos";
+    this.canvasID = "ArcOS";
+    this.appCanvas;
 
     this.parent = handler.getProcess(pid);
     this.Log = this.parent.Log.bind(this.parent);
@@ -55,6 +56,7 @@ class PlaceAPI {
     this.userPreferences = userPreferences;
     this.canvas = canvas;
     this.body = body;
+    this.appCanvas = this.applyCanvas;
 
     body.querySelector("#authButton").addEventListener("click", () => {
       if (this.token && this.token !== "null") {
@@ -398,9 +400,15 @@ class PlaceAPI {
 
     http.onload = async () => {
       if (http.status >= 200 && http.status < 300) {
-        const canvasInfo = JSON.parse(http.responseText)[0];
-        canvas.width = canvasInfo.width * 10; // Assuming each pixel is 10x10
-        canvas.height = canvasInfo.height * 10; // Assuming each pixel is 10x10
+        const canvasInfo1 = JSON.parse(http.responseText);
+        console.log(canvasInfo1)
+        if (!canvasInfo1 || canvasInfo1.length === 0) {
+            console.error("No canvas info found for the given ID:", this.canvasID);
+            return;
+        }
+        const canvasInfo = canvasInfo1[0];
+        canvas.width = Number.parseInt(canvasInfo["width"]) * 10; // Assuming each pixel is 10x10
+        canvas.height = Number.parseInt(canvasInfo["height"]) * 10; // Assuming each pixel is 10x10
 
         let test = await this.getPlaceData(); this.pixelCanvas = test;
         canvas.getContext("2d").fillStyle = "white";
@@ -431,6 +439,7 @@ class PlaceAPI {
 
   }
 
+  // how do i expose this function to other files?
   async getCanvasList() {
     let http = new XMLHttpRequest();
     http.open("GET", `${this.baseURL}/v3/getPublicCanvasList`, true);
@@ -451,14 +460,21 @@ class PlaceAPI {
   async applyCanvas(canvasID) {
     let http = new XMLHttpRequest();
     this.canvasID = canvasID;
+    let canvas = this.canvas;
 
     http.open("GET", `${this.baseURL}/v3/getCanvasInfo?canvas=${this.canvasID}`, true);
 
     http.onload = async () => {
       if (http.status >= 200 && http.status < 300) {
-        const canvasInfo = JSON.parse(http.responseText)[0];
-        canvas.width = canvasInfo.width * 10; // Assuming each pixel is 10x10
-        canvas.height = canvasInfo.height * 10; // Assuming each pixel is 10x10
+        const canvasInfo1 = JSON.parse(http.responseText);
+        console.log(canvasInfo1)
+        if (!canvasInfo1 || canvasInfo1.length === 0) {
+            console.error("No canvas info found for the given ID:", this.canvasID);
+            return;
+        }
+        const canvasInfo = canvasInfo1[0];
+        canvas.width = Number.parseInt(canvasInfo["width"]) * 10; // Assuming each pixel is 10x10
+        canvas.height = Number.parseInt(canvasInfo["height"]) * 10; // Assuming each pixel is 10x10
 
         let test = await this.getPlaceData(); this.pixelCanvas = test;
         canvas.getContext("2d").fillStyle = "white";
