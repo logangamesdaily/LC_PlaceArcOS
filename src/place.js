@@ -228,6 +228,12 @@ class PlaceAPI {
 
     this.socket.on("placePixel", (data) => {
       let { x, y, color } = data;
+
+      let canvasID = data.canvas;
+      if (canvasID !== this.canvasID) {
+        console.warn(`Received pixel for canvas ${canvasID}, but current canvas is ${this.canvasID}. Ignoring.`);
+        return;
+      }
       let ctx = canvas.getContext("2d");
       if (color.startsWith("c")) {
         color = color.replace("c", "#");
