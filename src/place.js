@@ -169,41 +169,78 @@ class PlaceAPI {
           this.clickOnce = true;
           setTimeout(() => { this.clickOnce = false; }, 250)
         }
+        let ctx = canvas.getContext("2d");
+          ctx.fillStyle = "white"; // Clear the pixel
+          ctx.fillRect((this.selectX - 10) * 10, (this.selectY - 10) * 10, 200, 200); 
 
         // select last pixel from the last selectX and selectY and draw the pixel again
-        if ((this.selectX && this.selectY) || (this.selectX == 0 && this.selectY == 0) || (this.selectX == 0 && this.selectY) || (this.selectX && this.selectY == 0)) {
-
+        this.pixelCanvas.forEach((pixel) => {
           const ctx = canvas.getContext("2d");
-          let drewPixel = false;
-          // Check if the pixel exists in the pixelCanvas
-          this.pixelCanvas.forEach((pixel) => {
-            if (pixel.x === this.selectX && pixel.y === this.selectY) {
-
-              let color = pixel.color;
-              if (color.startsWith("c")) {
-                color = color.replace("c", "#");
-              }
-              ctx.fillStyle = `${color}`;
-              ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
-              drewPixel = true;
-            }
-          });
-          if (!drewPixel) {
-            ctx.fillStyle = `#FFFFFF`;
-            ctx.fillRect(this.selectX * 10, this.selectY * 10, 10, 10); // Draw the pixel again
-
+          const x = pixel.x;
+          const y = pixel.y;
+          if (!(x < this.selectX + 15 && x > this.selectX - 15) || !(y < this.selectY + 15 && y > this.selectY - 15)) return; // Skip if not the selected pixel
+          if (x == this.selectX && y == this.selectY) {
+            ctx.fillStyle = "white"; // Clear the pixel
+            ctx.fillRect(x * 10, y * 10, 10, 10);  
           }
-        }
+          let color = pixel.color;
+
+          if (color.startsWith("c")) {
+            color = color.replace("c", "#");
+          }
+
+          ctx.fillStyle = `${color}`;
+          ctx.fillRect(x * 10, y * 10, 10, 10);
+        });
 
         this.selectX = Math.floor(clickX / 10);
         this.selectY = Math.floor(clickY / 10);
 
-
-        let ctx = canvas.getContext("2d");
-
         ctx.strokeStyle = "#ff0000";
         ctx.lineWidth = 1; // 1 pixel outline
         ctx.strokeRect(this.selectX * 10 + 1, this.selectY * 10 + 1, 8, 8); // Draw outline
+        // how do u center this?
+        let usernameOverlayX = this.selectX * 10; // Center the username overlay
+
+        let usernameOverlayY = this.selectY * 10 - 40; // Center the username overlay#
+        let pixel = this.pixelCanvas.find(pixel => pixel.x === this.selectX && pixel.y === this.selectY)
+        if (pixel == null || pixel == undefined) {
+          console.error("No pixel found at the selected coordinates");
+          return;
+        }
+        this.getUserFromUserID(pixel["userid"])
+          .then((username) => {
+            if (username) {
+              ctx.font = "12px Arial"; // Font size and family  
+              console.log("Username:", username);
+              let textLength = ctx.measureText("Placed by: u/"+username).width + 10; // Calculate text length with padding
+              ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent background
+              ctx.fillRect(usernameOverlayX - Math.floor(textLength/2) + 5, usernameOverlayY, textLength, 20); //
+              ctx.fillStyle = "white"; // Text color
+              ctx.fillText(`Placed by u/${username}`, (usernameOverlayX - Math.floor(textLength/2)) + 10, usernameOverlayY + 15); // Draw "Unknown User"
+            } else {
+              let username = "Unknown User";
+              ctx.font = "12px Arial"; // Font size and family  
+              console.log("Username:", username);
+              let textLength = ctx.measureText(username).width + 10; // Calculate text length with padding
+              ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent background
+              ctx.fillRect(usernameOverlayX - Math.floor(textLength/2) + 5, usernameOverlayY, textLength, 20); //
+              ctx.fillStyle = "white"; // Text color
+              ctx.fillText(`${username}`, (usernameOverlayX - Math.floor(textLength/2)) + 10, usernameOverlayY + 15); // Draw "Unknown User"
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching username:", error);
+            this.showNotification("error", "Error fetching username: " + error.message);
+              let username = "Pre-Auth pixel";
+              ctx.font = "12px Arial"; // Font size and family  
+              console.log("Username:", username);
+              let textLength = ctx.measureText(username).width + 10; // Calculate text length with padding
+              ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent background
+              ctx.fillRect(usernameOverlayX - Math.floor(textLength/2) + 5, usernameOverlayY, textLength, 20); //
+              ctx.fillStyle = "white"; // Text color
+              ctx.fillText(`${username}`, (usernameOverlayX - Math.floor(textLength/2)) + 10, usernameOverlayY + 15); // Draw "Unknown User"
+          });
       }
     });
 
@@ -231,7 +268,7 @@ class PlaceAPI {
 
       let canvasID = data.canvas;
       if (canvasID !== this.canvasID) {
-        console.warn(`Received pixel for canvas ${canvasID}, but current canvas is ${this.canvasID}. Ignoring.`);
+        // console.warn(`Received pixel for canvas ${canvasID}, but current canvas is ${this.canvasID}. Ignoring.`);
         return;
       }
       let ctx = canvas.getContext("2d");
@@ -334,19 +371,23 @@ class PlaceAPI {
 
   async getUserFromUserID(userID) {
     let username;
-    fetch("https://place.uk.to/api/v2/getuserinfo.sjs?id=" + userID)
-      .then((response) => {
-        try {
-          username = JSON.parse(response.text)["user"]
-        } catch {
-          username = false;
+     let http = new XMLHttpRequest();
+    http.open("GET", `https://place.uk.to/api/v2/getuserinfo.sjs?id=${userID}`, true);
+    return new Promise((resolve, reject) => {
+      http.onload = () => {
+        if (http.status >= 200 && http.status < 300) {
+          const data = JSON.parse(http.responseText);
+          username = data.user || "Unknown User";
+          resolve(username);
+        } else {
+          console.error("Failed to fetch user info:", http.statusText);
+          reject(new Error("Failed to fetch user info"));
         }
-      })
-    if (username != false && username) {
-      return username;
-    } else {
-      return false;
+      };
+      http.onerror = () => reject(new Error("Network error"));
+      http.send();
     }
+    );
   }
 
   async placePixel() {

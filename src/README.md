@@ -13,6 +13,10 @@ This client is available [here](https://github.com/An-Unnamed-Developer/LC_Place
 
 
 # Changelog
+- 1.1.1
+> add user indicator
+- 1.1.0
+> add multi canvas
 - 1.0.7
 > i actually fixed double clicking this time 
 - 1.0.6

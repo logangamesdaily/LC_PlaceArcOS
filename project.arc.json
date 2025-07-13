@@ -3,7 +3,7 @@
     "name": "Place for ArcOS",
     "description": "An official client for https://placepixel.online/ for ArcOS!",
     "author": "Logan Cookson",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "installLocation": "U:/Applications/LC_PlaceArcOS",
     "appId": "LC_PlaceArcOS",
     "store": {
