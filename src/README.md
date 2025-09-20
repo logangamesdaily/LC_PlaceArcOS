@@ -14,6 +14,8 @@ This client is available [here](https://github.com/An-Unnamed-Developer/LC_Place
 
 
 # Changelog
+- 2.0.0
+> complete redesign by Izaak Kuipers. now fits in with ArcOS brilliantly. added proper store imagery, banners and screenshots. new logo too!
 - 1.1.2
 > fix bug regarding this.showNotification causing the app to crash. added site banner compatibility.
 - 1.1.1
