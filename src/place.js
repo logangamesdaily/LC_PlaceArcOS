@@ -29,7 +29,9 @@ class PlaceAPI {
 
   async getPlaceData() {
     try {
-      const response = await fetch(`${this.baseURL}/v1/get_pixel.sjs?canvas=${this.canvasID}`);
+      const response = await fetch(
+        `${this.baseURL}/v1/get_pixel.sjs?canvas=${this.canvasID}`
+      );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -65,21 +67,27 @@ class PlaceAPI {
     http.onload = () => {
       if (http.status >= 200 && http.status < 300) {
         const statusInfo = JSON.parse(http.responseText);
-          statusDiv.className = "status";
-          let currentStatus = statusInfo[0] || {"text": "Something went wrong whilst displaying statuses", "severity": 2};
-          statusDiv.innerHTML = `<div>${currentStatus["text"] || ""}</div>`;
-          if (currentStatus["severity"] === -1) {
-            statusDiv.classList.add("green");
-          } else if (currentStatus["severity"] === 1) {
-            statusDiv.classList.add("yellow");
-          } else if (currentStatus["severity"] === 2) {
-            statusDiv.classList.add("red");
-          }
-          currentStatusID++;
-          if (currentStatusID >= statusInfo.length - 1) currentStatusID = 0;
+        statusDiv.className = "status";
+        let currentStatus = statusInfo[0] || {
+          text: "Something went wrong whilst displaying statuses",
+          severity: 2,
+        };
+        statusDiv.innerHTML = `<div>${currentStatus["text"] || ""}</div>`;
+        if (currentStatus["severity"] === -1) {
+          statusDiv.classList.add("green");
+        } else if (currentStatus["severity"] === 1) {
+          statusDiv.classList.add("yellow");
+        } else if (currentStatus["severity"] === 2) {
+          statusDiv.classList.add("red");
+        }
+        currentStatusID++;
+        if (currentStatusID >= statusInfo.length - 1) currentStatusID = 0;
         setInterval(() => {
           statusDiv.className = "status";
-          let currentStatus = statusInfo[currentStatusID] || {"text": "Something went wrong whilst displaying statuses", "severity": 2};
+          let currentStatus = statusInfo[currentStatusID] || {
+            text: "Something went wrong whilst displaying statuses",
+            severity: 2,
+          };
           statusDiv.innerHTML = `<div>${currentStatus["text"] || ""}</div>`;
           if (currentStatus["severity"] === -1) {
             statusDiv.classList.add("green");
@@ -92,7 +100,7 @@ class PlaceAPI {
           if (currentStatusID >= statusInfo.length - 1) currentStatusID = 0;
         }, 10000);
       }
-    }
+    };
     http.send();
 
     body.querySelector("#authButton").addEventListener("click", () => {
@@ -194,9 +202,11 @@ class PlaceAPI {
         const clickX = (event.clientX - rect.left) * scaleX;
         const clickY = (event.clientY - rect.top) * scaleY;
 
-
-        if (this.clickOnce == true && this.selectX == Math.floor(clickX / 10) && this.selectY == Math.floor(clickY / 10)) {
-
+        if (
+          this.clickOnce == true &&
+          this.selectX == Math.floor(clickX / 10) &&
+          this.selectY == Math.floor(clickY / 10)
+        ) {
           this.selectX = Math.floor(clickX / 10);
           this.selectY = Math.floor(clickY / 10);
           this.clickOnce = false;
@@ -204,21 +214,32 @@ class PlaceAPI {
           this.placePixel();
         } else {
           this.clickOnce = true;
-          setTimeout(() => { this.clickOnce = false; }, 250)
+          setTimeout(() => {
+            this.clickOnce = false;
+          }, 250);
         }
         let ctx = canvas.getContext("2d");
-          ctx.fillStyle = "white"; // Clear the pixel
-          ctx.fillRect((this.selectX - 10) * 10, (this.selectY - 10) * 10, 200, 200); 
+        ctx.fillStyle = "white"; // Clear the pixel
+        ctx.fillRect(
+          (this.selectX - 10) * 10,
+          (this.selectY - 10) * 10,
+          200,
+          200
+        );
 
         // select last pixel from the last selectX and selectY and draw the pixel again
         this.pixelCanvas.forEach((pixel) => {
           const ctx = canvas.getContext("2d");
           const x = pixel.x;
           const y = pixel.y;
-          if (!(x < this.selectX + 15 && x > this.selectX - 15) || !(y < this.selectY + 15 && y > this.selectY - 15)) return; // Skip if not the selected pixel
+          if (
+            !(x < this.selectX + 15 && x > this.selectX - 15) ||
+            !(y < this.selectY + 15 && y > this.selectY - 15)
+          )
+            return; // Skip if not the selected pixel
           if (x == this.selectX && y == this.selectY) {
             ctx.fillStyle = "white"; // Clear the pixel
-            ctx.fillRect(x * 10, y * 10, 10, 10);  
+            ctx.fillRect(x * 10, y * 10, 10, 10);
           }
           let color = pixel.color;
 
@@ -240,7 +261,9 @@ class PlaceAPI {
         let usernameOverlayX = this.selectX * 10; // Center the username overlay
 
         let usernameOverlayY = this.selectY * 10 - 40; // Center the username overlay#
-        let pixel = this.pixelCanvas.find(pixel => pixel.x === this.selectX && pixel.y === this.selectY)
+        let pixel = this.pixelCanvas.find(
+          (pixel) => pixel.x === this.selectX && pixel.y === this.selectY
+        );
         if (pixel == null || pixel == undefined) {
           console.error("No pixel found at the selected coordinates");
           return;
@@ -248,35 +271,66 @@ class PlaceAPI {
         this.getUserFromUserID(pixel["userid"])
           .then((username) => {
             if (username) {
-              ctx.font = "12px Arial"; // Font size and family  
+              ctx.font = "12px Arial"; // Font size and family
               console.log("Username:", username);
-              let textLength = ctx.measureText("Placed by: u/"+username).width + 10; // Calculate text length with padding
+              let textLength =
+                ctx.measureText("Placed by: u/" + username).width + 10; // Calculate text length with padding
               ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent background
-              ctx.fillRect(usernameOverlayX - Math.floor(textLength/2) + 5, usernameOverlayY, textLength, 20); //
+              ctx.fillRect(
+                usernameOverlayX - Math.floor(textLength / 2) + 5,
+                usernameOverlayY,
+                textLength,
+                20
+              ); //
               ctx.fillStyle = "white"; // Text color
-              ctx.fillText(`Placed by u/${username}`, (usernameOverlayX - Math.floor(textLength/2)) + 10, usernameOverlayY + 15); // Draw "Unknown User"
+              ctx.fillText(
+                `Placed by u/${username}`,
+                usernameOverlayX - Math.floor(textLength / 2) + 10,
+                usernameOverlayY + 15
+              ); // Draw "Unknown User"
             } else {
               let username = "Unknown User";
-              ctx.font = "12px Arial"; // Font size and family  
+              ctx.font = "12px Arial"; // Font size and family
               console.log("Username:", username);
               let textLength = ctx.measureText(username).width + 10; // Calculate text length with padding
               ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent background
-              ctx.fillRect(usernameOverlayX - Math.floor(textLength/2) + 5, usernameOverlayY, textLength, 20); //
+              ctx.fillRect(
+                usernameOverlayX - Math.floor(textLength / 2) + 5,
+                usernameOverlayY,
+                textLength,
+                20
+              ); //
               ctx.fillStyle = "white"; // Text color
-              ctx.fillText(`${username}`, (usernameOverlayX - Math.floor(textLength/2)) + 10, usernameOverlayY + 15); // Draw "Unknown User"
+              ctx.fillText(
+                `${username}`,
+                usernameOverlayX - Math.floor(textLength / 2) + 10,
+                usernameOverlayY + 15
+              ); // Draw "Unknown User"
             }
           })
           .catch((error) => {
             console.error("Error fetching username:", error);
-            this.showNotification("error", "Error fetching username: " + error.message);
-              let username = "Pre-Auth pixel";
-              ctx.font = "12px Arial"; // Font size and family  
-              console.log("Username:", username);
-              let textLength = ctx.measureText(username).width + 10; // Calculate text length with padding
-              ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent background
-              ctx.fillRect(usernameOverlayX - Math.floor(textLength/2) + 5, usernameOverlayY, textLength, 20); //
-              ctx.fillStyle = "white"; // Text color
-              ctx.fillText(`${username}`, (usernameOverlayX - Math.floor(textLength/2)) + 10, usernameOverlayY + 15); // Draw "Unknown User"
+            this.showNotification(
+              "error",
+              "Error fetching username: " + error.message
+            );
+            let username = "Pre-Auth pixel";
+            ctx.font = "12px Arial"; // Font size and family
+            console.log("Username:", username);
+            let textLength = ctx.measureText(username).width + 10; // Calculate text length with padding
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent background
+            ctx.fillRect(
+              usernameOverlayX - Math.floor(textLength / 2) + 5,
+              usernameOverlayY,
+              textLength,
+              20
+            ); //
+            ctx.fillStyle = "white"; // Text color
+            ctx.fillText(
+              `${username}`,
+              usernameOverlayX - Math.floor(textLength / 2) + 10,
+              usernameOverlayY + 15
+            ); // Draw "Unknown User"
           });
       }
     });
@@ -364,8 +418,9 @@ class PlaceAPI {
         await MessageBox(
           {
             title: "Login failed!",
-            message: `Your username or password might be incorrect.<br><br><b>Details</b>: ${data.message || "Unknown error"
-              }`,
+            message: `Your username or password might be incorrect.<br><br><b>Details</b>: ${
+              data.message || "Unknown error"
+            }`,
             image: icons.ErrorIcon,
             buttons: [
               {
@@ -386,8 +441,9 @@ class PlaceAPI {
       await MessageBox(
         {
           title: "Login failed!",
-          message: `Your username or password might be incorrect.<br><br><b>Details</b>: ${error || "Unknown error"
-            }`,
+          message: `Your username or password might be incorrect.<br><br><b>Details</b>: ${
+            error || "Unknown error"
+          }`,
           image: icons.ErrorIcon,
           buttons: [
             {
@@ -412,15 +468,19 @@ class PlaceAPI {
     //   message: message,
     //   timeout: 5000,
     // });
-    // 
+    //
     // this.process.userDaemon.sendNotification(n);
     // Attempted to send a system notification, but it doesn't work and isn't at all necessary.
   }
 
   async getUserFromUserID(userID) {
     let username;
-     let http = new XMLHttpRequest();
-    http.open("GET", `https://place.uk.to/api/v2/getuserinfo.sjs?id=${userID}`, true);
+    let http = new XMLHttpRequest();
+    http.open(
+      "GET",
+      `https://place.uk.to/api/v2/getuserinfo.sjs?id=${userID}`,
+      true
+    );
     return new Promise((resolve, reject) => {
       http.onload = () => {
         if (http.status >= 200 && http.status < 300) {
@@ -434,8 +494,7 @@ class PlaceAPI {
       };
       http.onerror = () => reject(new Error("Network error"));
       http.send();
-    }
-    );
+    });
   }
 
   async placePixel() {
@@ -443,7 +502,11 @@ class PlaceAPI {
       console.error("No color selected");
       return;
     }
-    if ((!this.selectX || !this.selectY) && (this.selectX != 0 && this.selectY != 0)) {
+    if (
+      (!this.selectX || !this.selectY) &&
+      this.selectX != 0 &&
+      this.selectY != 0
+    ) {
       console.error("No pixel selected");
       return;
     }
@@ -485,27 +548,34 @@ class PlaceAPI {
     await daemon.spawnThirdParty(json, path, this.pid);
   }
 
-
   async resetCanvas() {
     let canvas = this.canvas;
 
     let http = new XMLHttpRequest();
 
-    http.open("GET", `${this.baseURL}/v3/getCanvasInfo?canvas=${this.canvasID}`, true);
+    http.open(
+      "GET",
+      `${this.baseURL}/v3/getCanvasInfo?canvas=${this.canvasID}`,
+      true
+    );
 
     http.onload = async () => {
       if (http.status >= 200 && http.status < 300) {
         const canvasInfo1 = JSON.parse(http.responseText);
-        console.log(canvasInfo1)
+        console.log(canvasInfo1);
         if (!canvasInfo1 || canvasInfo1.length === 0) {
-            console.error("No canvas info found for the given ID:", this.canvasID);
-            return;
+          console.error(
+            "No canvas info found for the given ID:",
+            this.canvasID
+          );
+          return;
         }
         const canvasInfo = canvasInfo1[0];
         canvas.width = Number.parseInt(canvasInfo["width"]) * 10; // Assuming each pixel is 10x10
         canvas.height = Number.parseInt(canvasInfo["height"]) * 10; // Assuming each pixel is 10x10
 
-        let test = await this.getPlaceData(); this.pixelCanvas = test;
+        let test = await this.getPlaceData();
+        this.pixelCanvas = test;
         canvas.getContext("2d").fillStyle = "white";
         canvas.getContext("2d").fillRect(0, 0, canvas.width, canvas.height);
 
@@ -522,16 +592,13 @@ class PlaceAPI {
           ctx.fillStyle = `${color}`;
           ctx.fillRect(x * 10, y * 10, 10, 10);
         });
-      }
-      else {
+      } else {
         console.error("Failed to fetch canvas info:", http.statusText);
         return;
       }
-    }
+    };
 
     http.send();
-
-
   }
 
   // how do i expose this function to other files?
@@ -549,7 +616,7 @@ class PlaceAPI {
         console.error("Failed to fetch canvas list:", http.statusText);
         return [];
       }
-    }
+    };
   }
 
   async applyCanvas(canvasID) {
@@ -557,21 +624,29 @@ class PlaceAPI {
     this.canvasID = canvasID;
     let canvas = this.canvas;
 
-    http.open("GET", `${this.baseURL}/v3/getCanvasInfo?canvas=${this.canvasID}`, true);
+    http.open(
+      "GET",
+      `${this.baseURL}/v3/getCanvasInfo?canvas=${this.canvasID}`,
+      true
+    );
 
     http.onload = async () => {
       if (http.status >= 200 && http.status < 300) {
         const canvasInfo1 = JSON.parse(http.responseText);
-        console.log(canvasInfo1)
+        console.log(canvasInfo1);
         if (!canvasInfo1 || canvasInfo1.length === 0) {
-            console.error("No canvas info found for the given ID:", this.canvasID);
-            return;
+          console.error(
+            "No canvas info found for the given ID:",
+            this.canvasID
+          );
+          return;
         }
         const canvasInfo = canvasInfo1[0];
         canvas.width = Number.parseInt(canvasInfo["width"]) * 10; // Assuming each pixel is 10x10
         canvas.height = Number.parseInt(canvasInfo["height"]) * 10; // Assuming each pixel is 10x10
 
-        let test = await this.getPlaceData(); this.pixelCanvas = test;
+        let test = await this.getPlaceData();
+        this.pixelCanvas = test;
         canvas.getContext("2d").fillStyle = "white";
         canvas.getContext("2d").fillRect(0, 0, canvas.width, canvas.height);
 
@@ -588,19 +663,22 @@ class PlaceAPI {
           ctx.fillStyle = `${color}`;
           ctx.fillRect(x * 10, y * 10, 10, 10);
         });
-      }
-      else {
+      } else {
         console.error("Failed to fetch canvas info:", http.statusText);
         return;
       }
-    }
+    };
 
     http.send();
   }
 
   async getCanvasDetails(canvasID) {
     let http = new XMLHttpRequest();
-    http.open("GET", `${this.baseURL}/v3/getCanvasInfo?canvas=${canvasID}`, true);
+    http.open(
+      "GET",
+      `${this.baseURL}/v3/getCanvasInfo?canvas=${canvasID}`,
+      true
+    );
 
     return new Promise((resolve, reject) => {
       http.onload = () => {
