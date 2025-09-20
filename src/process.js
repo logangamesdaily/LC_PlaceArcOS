@@ -10,7 +10,7 @@ class proc extends ThirdPartyAppProcess {
     const body = this.getBody();
     body.innerHTML = html;
 
-    this.place = new PlaceAPI(this.pid);
+    this.place = new PlaceAPI(this.pid, this);
     let canvas = body.querySelector("#canvas");
     let disconnectScreen = body.querySelector("#disconnected");
 

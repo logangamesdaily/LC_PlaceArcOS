@@ -16,9 +16,28 @@ declare global {
 
   export const EchoIntro: () => void;
 
+  export const ArcOSVersion = "7.0.6";
+
+  export const VALIDATION_STR = "thisWonderfulArcOSServerIdentifiedByTheseWordsPleaseDontSteal(c)IzKuipers";
+
+  export const BETA = false;
+
+  export const USERFS_UUID = "233D-CE74-18C0-0B08";
+
   export function getBuild(): Promise<void>;
 
   export const ArcBuild: () => string;
+
+  export class changeLogs {
+      private CHANGELOG_URL;
+      ChangeLogUrls: Record<string, string>;
+      ChangeLogCache: Record<string, string>;
+      refreshChangelogs(): Promise<false | undefined>;
+      parseChangeLogsRepoFile(input: string): Record<string, string>;
+      readChangelog(version: string): Promise<string | undefined>;
+  }
+
+  export const ChangeLogs: changeLogs;
 
   export function getLicense(): Promise<void>;
 
@@ -74,42 +93,6 @@ declare global {
   export const LogLevelCaptions: Record<LogLevel, string>;
 
   export const ShortLogLevelCaptions: Record<LogLevel, string>;
-
-  export const ArcOSVersion = "7.0.3";
-
-  export const VALIDATION_STR = "thisWonderfulArcOSServerIdentifiedByTheseWordsPleaseDontSteal(c)IzKuipers";
-
-  export const BETA = true;
-
-  export function Log(source: string, message: string, level?: LogLevel): void;
-
-  export class KernelModule {
-      protected readonly IS_KMOD = true;
-      protected kernel: WaveKernel;
-      id: string;
-      constructor(kernel: WaveKernel, id: string);
-      _init(): Promise<void>;
-      __init(): Promise<void>;
-      protected Log(message: string, level?: LogLevel): void;
-  }
-
-  export class Environment extends KernelModule {
-      private store;
-      private readOnlyValues;
-      constructor(kernel: WaveKernel, id: string);
-      _init(): Promise<void>;
-      set(key: string, value: any): boolean;
-      setMultiple(entries: [
-          string,
-          any
-      ][]): void;
-      delete(key: string): boolean;
-      get(key: string): any;
-      getMultiple(keys: string[]): any[];
-      setReadonly(key: string): void;
-      setWritable(key: string): void;
-      reset(): void;
-  }
 
   export type DispatchCallback = (...args: any[]) => any;
 
@@ -167,22 +150,82 @@ declare global {
 
   export function DownloadFile(file: ArrayBuffer, filename: string, mimetype?: string): void;
 
-  export class ThirdPartyAppProcess extends AppProcess {
-      static readonly TPA_REV = 1;
-      workingDirectory: string;
-      mutationLock: boolean;
-      urlCache: Record<string, string>;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, workingDirectory: string, ...args: any[]);
-      __render__(body: HTMLDivElement): Promise<void>;
+  export const Kernel: () => WaveKernel;
+
+  export const KernelLogs: () => ReadableStore<import("types/logging").LogItem[]>;
+
+  export const KernelParams: () => URLSearchParams;
+
+  export const KernelInitPid: () => number;
+
+  export const KernelModules: () => string[];
+
+  export const KernelStateHandler: () => StateHandler | undefined;
+
+  export const KernelIsPanicked: () => boolean;
+
+  export const KernelPremature: () => boolean;
+
+  export interface TypedProcess {
+      start?: () => any;
+      stop?: () => any;
+      killSelf: () => Promise<boolean>;
+      pid: number;
+      parentPid?: number;
+      name: string;
+      _disposed: boolean;
+      _criticalProcess: boolean;
   }
 
+  export type RenderArgs = Record<string, any>;
+
+  export type ProcessSpawnResult = "success" | "err_disabled" | "err_aboveLimit";
+
+  export type ProcessKillResult = "success" | "err_elevation" | "err_criticalProcess" | "err_disposed" | "err_noExist" | "err_killCancel";
+
   export const Sleep: (ms?: number) => Promise<unknown>;
+
+  export function WindowSystemContextMenu(runtime: ContextMenuRuntime): AppContextMenu;
+
+  export class ContextMenuRuntime extends AppProcess {
+      contextData: ReadableStore<ContextMenuInstance | null>;
+      CLICKLOCKED: boolean;
+      contextProps: Record<string, any[]>;
+      currentMenu: ReadableStore<string>;
+      private readonly validContexMenuTags;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
+      start(): Promise<false | undefined>;
+      render(): Promise<void>;
+      createContextMenu(data: ContextMenuInstance): Promise<void>;
+      closeContextMenu(): void;
+      assignContextMenuHooks(): void;
+      handleContext(e: MouseEvent): Promise<void>;
+      getWindowByEventTarget(target: EventTarget[]): HTMLDivElement | null;
+      composePosition(x: number, y: number, mW: number, mH: number): [
+          number,
+          number
+      ];
+      getContextEntry(pid: number, scope: string): ContextMenuItem[];
+      getContextMenuScope(e: MouseEvent): HTMLDivElement | null;
+  }
+
+  export function tryJsonParse<T = any>(input: any): T;
+
+  export function tryJsonStringify(input: any, indent: number): string;
+
+  export function keysToLowerCase(obj: any): any;
+
+  export type ValidationObject = {
+      [key: string]: any;
+  };
+
+  export function validateObject(target: ValidationObject, validation: ValidationObject): boolean;
 
   export function getAllJsonPaths(obj: any, prefix?: string): string[];
 
   export function getJsonHierarchy<T = any>(object: Object, hierarchy: string): T | null;
 
-  export function setJsonHierarchy<T = any>(object: Object, hierarchy: string, value: T): T | null;
+  export function setJsonHierarchy<T = any>(object: Object, hierarchy: string, value: any): T | null;
 
   export type NestedObject = Record<string, any>;
 
@@ -221,6 +264,10 @@ declare global {
   export function sortByKey(array: any[], key: string, reverse?: boolean): any[];
 
   export function sortByHierarchy(array: any[], hierarchy: string): any[];
+
+  export function deepCopyWithBlobs<T>(obj: T): Promise<T>;
+
+  export function authcode(): string;
 
   export interface ArcShortcut {
       icon: string;
@@ -330,6 +377,18 @@ declare global {
       id: string;
   }
 
+  export type DriveCapabilities = "readDir" | "makeDir" | "readFile" | "writeFile" | "tree" | "copyItem" | "moveItem" | "deleteItem" | "direct" | "quota" | "bulk" | "stat";
+
+  export interface FilesystemStat {
+      isFile: boolean;
+      isDirectory: boolean;
+      size: number;
+      created: number;
+      modified: number;
+  }
+
+  export function Log(source: string, message: string, level?: LogLevel): void;
+
   export interface ServerInfo {
       validation: string;
       status: string;
@@ -346,7 +405,7 @@ declare global {
       connected: boolean;
       serverInfo: ServerInfo | undefined;
       static isConnected(): boolean;
-      static url(): string | false | undefined;
+      static url(): string | undefined;
       constructor(kernel: WaveKernel, id: string);
       _init(): Promise<void>;
       private getServerUrl;
@@ -360,7 +419,6 @@ declare global {
       driveLetter: string | undefined;
       label: string;
       uuid: string;
-      kernel: WaveKernel;
       readonly FIXED: boolean;
       readonly REMOVABLE: boolean;
       readonly READONLY: boolean;
@@ -370,10 +428,11 @@ declare global {
       readonly FILESYSTEM_LONG: string;
       BUSY: boolean;
       protected fileLocks: Record<string, number>;
+      protected CAPABILITIES: Record<DriveCapabilities, boolean>;
+      constructor(uuid: string, letter?: string, ...args: any[]);
+      Log(message: string, level?: LogLevel): void;
       lockFile(path: string, pid: number): Promise<void>;
       releaseLock(path: string, pid: number, fromSystem?: boolean): Promise<void>;
-      constructor(kernel: WaveKernel, uuid: string, letter?: string, ...args: any[]);
-      Log(message: string, level?: LogLevel): void;
       __spinUp(onProgress?: FilesystemProgressCallback): Promise<boolean>;
       __spinDown(onProgress?: FilesystemProgressCallback): Promise<boolean>;
       _spinUp(onProgress?: FilesystemProgressCallback): Promise<boolean>;
@@ -389,6 +448,8 @@ declare global {
       direct(path: string): Promise<string | undefined>;
       quota(): Promise<UserQuota>;
       bulk<T = any>(path: string, extension: string): Promise<Record<string, T>>;
+      stat(path: string): Promise<FilesystemStat | undefined>;
+      isCapable(capability: DriveCapabilities): void;
   }
 
   export class Filesystem extends KernelModule {
@@ -412,8 +473,8 @@ declare global {
       readFile(path: string, onProgress?: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
       writeFile(path: string, data: Blob, onProgress?: FilesystemProgressCallback, dispatch?: boolean): Promise<boolean>;
       tree(path: string): Promise<RecursiveDirectoryReadReturn | undefined>;
-      copyItem(source: string, destination: string, dispatch?: boolean): Promise<boolean>;
-      moveItem(source: string, destination: string, dispatch?: boolean): Promise<boolean>;
+      copyItem(source: string, destination: string, dispatch?: boolean, onProgress?: FilesystemProgressCallback): Promise<boolean>;
+      moveItem(source: string, destination: string, dispatch?: boolean, onProgress?: FilesystemProgressCallback): Promise<boolean>;
       deleteItem(path: string, dispatch?: boolean): Promise<boolean>;
       uploadFiles(target: string, accept?: string, multiple?: boolean, onProgress?: FilesystemProgressCallback): Promise<UploadReturn>;
       defaultProgress(d: FilesystemProgress): void;
@@ -421,6 +482,8 @@ declare global {
       releaseLock(path: string, pid: number): Promise<void>;
       direct(path: string): Promise<string | undefined>;
       nextAvailableDriveLetter(): string | undefined;
+      isDirectory(path: string): Promise<false | DirectoryReadReturn | undefined>;
+      stat(path: string): Promise<FilesystemStat | undefined>;
   }
 
   export type SoundStore = Record<string, any>;
@@ -448,7 +511,6 @@ declare global {
   export class ProcessDispatch {
       private store;
       private parent;
-      private kernel;
       constructor(process: Process);
       subscribe(event: string, callback: DispatchCallback): void;
       dispatch(event: string, ...args: any[]): Promise<boolean>;
@@ -460,7 +522,6 @@ declare global {
       handler: ProcessHandler;
       dispatch: ProcessDispatch;
       systemDispatch: SystemDispatch;
-      kernel: WaveKernel;
       pid: number;
       parentPid: number;
       name: string;
@@ -479,197 +540,143 @@ declare global {
       unlockFile(path: string): Promise<false | undefined>;
   }
 
-  export type MaybePromise<T> = T | Promise<T>;
-
-  export interface App {
-      metadata: AppMetadata;
-      size: Size;
-      minSize: Size;
-      maxSize: Size;
-      position: MaybeCenteredPosition;
-      state: AppState;
-      controls: WindowControls;
-      assets: AppAssets;
-      autoRun?: boolean;
-      core?: boolean;
-      hidden?: boolean;
-      overlay?: boolean;
-      glass?: boolean;
-      thirdParty?: false;
-      id: string;
-      originId?: string;
-      entrypoint?: string;
-      workingDirectory?: string;
-      opens?: {
-          extensions?: string[];
-          mimeTypes?: string[];
-      };
-      elevated?: boolean;
-      acceleratorDescriptions?: Record<string, string>;
-      fileSignatures?: Record<string, string>;
-      process?: ThirdPartyAppProcess;
-      tpaRevision?: number;
-      noSafeMode?: boolean;
-      vital?: boolean;
+  export class BaseService extends Process {
+      host: ServiceHost;
+      activated: boolean;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
   }
 
-  export type RegisteredProcess = {
-      metadata: AppMetadata;
-      id: string;
-      assets: {
-          runtime: typeof Process;
-      };
-      vital?: boolean;
-  };
-
-  export interface InstalledApp extends App {
-      metadata: AppMetadata;
-      tpaPath: string;
-  }
-
-  export type ScriptedApp = Omit<App, "assets">;
-
-  export interface AppMetadata {
-      name: string;
-      version: string;
-      author: string;
-      icon: string;
-      appGroup?: string;
-  }
-
-  export interface AppState {
-      resizable: boolean;
-      minimized: boolean;
-      maximized: boolean;
-      fullscreen: boolean;
-      headless: boolean;
-  }
-
-  export interface WindowControls {
-      minimize: boolean;
-      maximize: boolean;
-      close: boolean;
-  }
-
-  export interface AppAssets {
-      runtime: typeof Process;
-      component?: typeof SvelteComponent;
-  }
-
-  export interface AppComponentProps<T = AppProcess> {
-      process: T;
-      pid: number;
-      kernel: WaveKernel;
-      handler: ProcessHandler;
-      app: App;
-      windowTitle: ReadableStore<string>;
-      windowIcon: ReadableStore<string>;
-  }
-
-  export type Size = {
-      w: number;
-      h: number;
-  };
-
-  export type Position = {
-      x: number;
-      y: number;
-  };
-
-  export type MaybeCenteredPosition = Partial<Position> & {
-      centered?: boolean;
-  };
-
-  export type AppProcessData = {
-      data: App;
-      id: string;
-      desktop?: string;
-  };
-
-  export type AppStorage = ((App | InstalledApp) & {
-      originId?: string;
-  })[];
-
-  export type AppStoreCb = () => MaybePromise<AppStorage>;
-
-  export interface ContextMenuItem {
-      sep?: boolean;
-      caption?: string;
-      icon?: string;
-      image?: string;
-      isActive?: ContextMenuCallback<boolean>;
-      action?: ContextMenuCallback;
-      subItems?: ContextMenuItem[];
-      disabled?: ContextMenuCallback<boolean>;
-      accelerator?: string;
-  }
-
-  export type ContextMenuCallback<T = any> = (...args: any[]) => MaybePromise<T>;
-
-  export type AppContextMenu = {
-      [key: string]: ContextMenuItem[];
-  };
-
-  export interface ContextMenuInstance {
-      x: number;
-      y: number;
-      items: ContextMenuItem[];
-      process?: AppProcess;
-      artificial?: boolean;
-      props?: any[];
-  }
-
-  export interface WindowResizer {
-      className: string;
-      cursor: string;
-      width: string;
-      height: string;
-      top?: string;
-      bottom?: string;
-      left?: string;
-      right?: string;
-  }
-
-  export interface MessageBoxData {
+  export interface BugReport {
+      authorId?: string;
       title: string;
-      message?: string;
-      content?: Component<any>;
-      buttons: MessageBoxButton[];
-      image?: string;
-      sound?: string;
+      body: string;
+      logs: LogItem[];
+      closed: boolean;
+      version: `${number}.${number}.${number}`;
+      location: Location;
+      userData?: Record<string, any>;
+      userAgent?: string;
+      api?: string;
+      frontend: string;
+      meta: MetaEnvironment;
+      _id?: string;
+      createdAt: string;
+      mode: string;
+      build: string;
+      public: boolean;
   }
 
-  export interface MessageBoxButton {
+  export interface OutgoingBugReport {
+      title: string;
+      body: string;
+      logs: LogItem[];
+      version: `${number}.${number}.${number}`;
+      location: Location;
+      userAgent?: string;
+      api?: string;
+      frontend: string;
+      meta: MetaEnvironment;
+      mode: string;
+      build: string;
+      public?: boolean;
+  }
+
+  export interface Location {
+      hash: string;
+      host: string;
+      hostname: string;
+      href: string;
+      origin: string;
+      pathname: string;
+      port: string;
+      protocol: string;
+      search: string;
+  }
+
+  export interface MetaEnvironment {
+      BASE_URL: string;
+      MODE: string;
+      DEV: boolean;
+      PROD: boolean;
+      SSR: boolean;
+      DW_SERVER_URL?: string;
+      DW_SERVER_AUTHCODE?: string;
+  }
+
+  export interface ReportStatistics extends Record<string, number> {
+      opened: number;
+      closed: number;
+      total: number;
+      apis: number;
+  }
+
+  export interface ReportOptions {
+      title: string;
+      body?: string;
+      noLogs?: boolean;
+      anonymous?: boolean;
+      public?: boolean;
+  }
+
+  export interface FsProgressOperation {
+      type: "quantity" | "size" | "none";
+      icon: string;
       caption: string;
-      action: () => void;
-      suggested?: boolean;
+      subtitle: string;
+      done: number;
+      max: number;
+      cancel?: () => void;
+      errors: string[];
   }
 
-  export type ConfirmationData = Omit<MessageBoxData, "buttons">;
+  export interface FileProgressMutator {
+      progress: ReadableStore<FsProgressOperation>;
+      mutateMax: (mutator: number) => void;
+      mutDone: (mutator: number) => void;
+      mutErr: (mutator: string) => void;
+      setMax: (value: number) => void;
+      setDone: (value: number) => void;
+      setErrors: (value: string[]) => void;
+      setCancel: (cancel: (() => void) | undefined) => void;
+      updateCaption: (caption: string) => void;
+      updSub: (subtitle: string) => void;
+      stop: () => Promise<any>;
+      show: () => Promise<any>;
+      setType: (type: "quantity" | "size" | "none") => void;
+      process: () => FsProgressRuntime | undefined;
+  }
 
-  export class MessageBoxRuntime extends AppProcess {
-      data: MessageBoxData | undefined;
-      acted: ReadableStore<boolean>;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, data: MessageBoxData);
-      start(): Promise<void>;
-      render(): Promise<void>;
+  export const DummyFileProgress: FileProgressMutator;
+
+  export class FsProgressRuntime extends AppProcess {
+      Progress: ReadableStore<FsProgressOperation>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, store: ReadableStore<FsProgressOperation>);
+      render({ store }: RenderArgs): Promise<void> | undefined;
       onClose(): Promise<boolean>;
   }
 
-  export const MessageBoxApp: App;
-
-  export function MessageBox(data: MessageBoxData, parentPid: number, overlay?: boolean): Promise<void>;
-
-  export function GetConfirmation(data: ConfirmationData, parentPid: number, overlay?: boolean): Promise<boolean>;
-
-  export interface SearchItem {
-      caption: string;
-      action: (item?: SearchItem) => void;
-      image?: string;
-      description?: string;
+  export class GlobalLoadIndicatorRuntime extends AppProcess {
+      caption: ReadableStore<string>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, caption: string);
   }
 
-  export type SearchProvider = () => Promise<SearchItem[]> | SearchItem[];
+  export const GlobalLoadIndicatorApp: App;
+
+  export interface IconPickerData {
+      forWhat: string;
+      defaultIcon: string;
+      returnId: string;
+  }
+
+  export class TerminalWindowRuntime extends AppProcess {
+      term: Terminal | undefined;
+      overridePopulatable: boolean;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
+      render(): Promise<void>;
+      protected stop(): Promise<void>;
+  }
+
+  export const TerminalWindowApp: App;
 
   export interface UserTheme {
       author: string;
@@ -696,6 +703,116 @@ declare global {
 
   export const UserThemeKeys: string[];
 
+  export const installArcPkg: (d: UserDaemon) => FileHandler;
+
+  export const applyArcTheme: (d: UserDaemon) => FileHandler;
+
+  export const installTpaFile: (d: UserDaemon) => FileHandler;
+
+  export const mountZipFile: (d: UserDaemon) => FileHandler;
+
+  export const runTpaFile: (d: UserDaemon) => FileHandler;
+
+  export function UUID(): string;
+
+  export const runTpaBundle: (d: UserDaemon) => FileHandler;
+
+  export const BuiltinThemes: ThemeStore;
+
+  export const VisualStyles: Record<string, string>;
+
+  export const ActivityIconTranslations: {
+      unknown: string;
+      login: string;
+      logout: string;
+  };
+
+  export const ActivityCaptionTranslations: {
+      unknown: string;
+      login: string;
+      logout: string;
+  };
+
+  export const TimeFrames: Record<string, string>;
+
+  export const BlankUserTheme: UserTheme;
+
+  export function DefaultFileHandlers(daemon: UserDaemon): Record<string, FileHandler>;
+
+  export const DefaultAppData: App;
+
+  export const DefaultThirdPartyAppData: {
+      metadata: {
+          name: string;
+          author: string;
+          version: string;
+          icon: string;
+      };
+      size: {
+          w: number;
+          h: number;
+      };
+      minSize: {
+          w: number;
+          h: number;
+      };
+      maxSize: {
+          w: number;
+          h: number;
+      };
+      position: {
+          centered: boolean;
+      };
+      state: {
+          maximized: boolean;
+          minimized: boolean;
+          resizable: boolean;
+          headless: boolean;
+          fullscreen: boolean;
+      };
+      controls: {
+          minimize: boolean;
+          maximize: boolean;
+          close: boolean;
+      };
+      entrypoint: string;
+      glass: boolean;
+      id: string;
+  };
+
+  export const AppGroups: Record<string, string>;
+
+  export const UserPaths: {
+      Home: string;
+      Documents: string;
+      Pictures: string;
+      Downloads: string;
+      Wallpapers: string;
+      Desktop: string;
+      Music: string;
+      Applications: string;
+      Trashcan: string;
+      Root: string;
+      System: string;
+      Migrations: string;
+      Configuration: string;
+      AppShortcuts: string;
+  };
+
+  export const SystemFolders: string[];
+
+  export const UserPathCaptions: Record<string, string>;
+
+  export const HiddenUserPaths: string[];
+
+  export const UserPathIcons: Record<string, string>;
+
+  export const UserFonts: string[];
+
+  export type ComparisonResult = "lower" | "higher" | "equal";
+
+  export function compareVersion(left: string, right: string): ComparisonResult;
+
   export interface Wallpaper {
       author: string;
       name: string;
@@ -717,7 +834,6 @@ declare global {
       createdAt: string;
       hasTotp: boolean;
       restricted: boolean;
-      accountNumber: number;
       storageSize: number;
   }
 
@@ -729,6 +845,7 @@ declare global {
       appPreferences: ApplicationPreferences;
       account: AccountSettings;
       isDefault?: boolean;
+      firstRunDone?: boolean;
       desktop: DesktopPreferences;
       userThemes: ThemeStore;
       userWallpapers: Record<string, Wallpaper>;
@@ -820,6 +937,7 @@ declare global {
       showHiddenApps: boolean;
       noGlass: boolean;
       userFont?: string;
+      trafficLights: boolean;
   }
 
   export interface SecurityPreferences {
@@ -859,78 +977,441 @@ declare global {
       username: string;
       displayName?: string;
       profilePicture: string;
-      accountNumber: number;
       admin: boolean;
       dispatchClients: number;
   }
 
-  export interface TypedProcess {
-      start?: () => any;
-      stop?: () => any;
-      killSelf: () => Promise<boolean>;
-      pid: number;
-      parentPid?: number;
+  export interface CategorizedDiskUsage {
+      sizes: {
+          system: number;
+          trash: number;
+          home: number;
+          apps: number;
+      };
+      absolutePercentages: {
+          system: number;
+          trash: number;
+          home: number;
+          apps: number;
+      };
+      relativePercentages: {
+          system: number;
+          trash: number;
+          home: number;
+          apps: number;
+      };
+      used: number;
+      free: number;
+      total: number;
+  }
+
+  export interface ArcPackage {
       name: string;
-      _disposed: boolean;
-      _criticalProcess: boolean;
+      author: string;
+      version: string;
+      description: string;
+      installLocation: `U:/Applications/${string}`;
+      appId: string;
+      store?: {
+          image?: string;
+          screenshots?: string[];
+          banner?: string;
+      };
   }
 
-  export type RenderArgs = Record<string, any>;
+  export interface StoreItem {
+      name: string;
+      userId: string;
+      user?: PublicUserInfo;
+      pkg: ArcPackage;
+      _id: string;
+      official: boolean;
+      installCount: number;
+      lastUpdated: number;
+      blocked: boolean;
+      size: number;
+      createdAt: string;
+      updatedAt: string;
+      deprecated: boolean;
+      description: string;
+      verifiedBy?: string;
+      verifiedVer?: string;
+      verifiedNote?: string;
+      verificationAgent?: PublicUserInfo;
+  }
 
-  export type ProcessSpawnResult = "success" | "err_disabled" | "err_aboveLimit";
+  export interface PartialStoreItem {
+      _id: string;
+      name: string;
+      userId: string;
+      user?: PublicUserInfo;
+      pkg: ArcPackage;
+      official: boolean;
+      installCount: number;
+      lastUpdated: number;
+      store?: {
+          image?: string;
+          screenshots?: string[];
+          banner?: string;
+      };
+      description: string;
+      blocked: boolean;
+      size: number;
+      createdAt: string;
+      updatedAt: string;
+      deprecated: boolean;
+      verifiedBy?: string;
+      verifiedVer?: string;
+      verifiedNote?: string;
+      verificationAgent?: PublicUserInfo;
+  }
 
-  export type ProcessKillResult = "success" | "err_elevation" | "err_criticalProcess" | "err_disposed" | "err_noExist" | "err_killCancel";
+  export type InstallStatusType = "mkdir" | "file" | "registration" | "other";
 
-  export interface FsProgressOperation {
-      type: "quantity" | "size" | "none";
+  export type InstallStatusMode = "done" | "failed" | "working";
+
+  export interface InstallStatusItem {
+      type: InstallStatusType;
+      status: InstallStatusMode;
+      content: string;
+  }
+
+  export type InstallStatus = Record<string, InstallStatusItem>;
+
+  export interface UpdateInfo {
+      name: string;
+      oldVer: string;
+      newVer: string;
+      pkg: StoreItem;
+  }
+
+  export class InstallerProcess extends Process {
+      status: ReadableStore<InstallStatus>;
+      failReason: ReadableStore<string>;
+      installing: ReadableStore<boolean>;
+      completed: ReadableStore<boolean>;
+      focused: ReadableStore<string>;
+      verboseLog: string[];
+      metadata?: ArcPackage;
+      userDaemon: UserDaemon;
+      parent: DistributionServiceProcess;
+      TOTAL_COUNT: ReadableStore<number>;
+      COUNT: ReadableStore<number>;
+      item?: StoreItem;
+      zip?: JSZip;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, zip: JSZip, metadata: ArcPackage, item: StoreItem);
+      start(): Promise<void>;
+      logStatus(content: string, type?: InstallStatusType, status?: InstallStatusMode): void;
+      setCurrentStatus(status: InstallStatusMode): Promise<void>;
+      setCurrentContent(content: string): Promise<void>;
+      getFiles(): Promise<{
+          files: {
+              [k: string]: JSZip.JSZipObject;
+          };
+          sortedPaths: string[];
+      }>;
+      createInstallLocation(): Promise<boolean>;
+      registerApp(): Promise<boolean>;
+      mkdir(path: string): Promise<boolean>;
+      writeFile(path: string, content: ArrayBuffer): Promise<boolean>;
+      fail(reason: string): void;
+      go(): Promise<boolean>;
+      stop(): Promise<boolean>;
+      checkDesktopIcon(): Promise<void>;
+      onStop(): Promise<void>;
+  }
+
+  export class DistributionServiceProcess extends BaseService {
+      private readonly dataFolder;
+      private readonly tempFolder;
+      private readonly installedListPath;
+      _BUSY: string;
+      private installListCache;
+      preferences: UserPreferencesStore;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
+      start(): Promise<false | undefined>;
+      packageInstallerFromPath(path: string, progress?: FilesystemProgressCallback, item?: StoreItem): Promise<InstallerProcess | undefined>;
+      packageInstaller(zip: JSZip, metadata: ArcPackage, item?: StoreItem): Promise<InstallerProcess | undefined>;
+      getStoreItem(id: string): Promise<StoreItem | undefined>;
+      getStoreItemByName(name: string): Promise<StoreItem | undefined>;
+      downloadStoreItem(id: string, onProgress?: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
+      storeItemInstaller(id: string, onProgress?: FilesystemProgressCallback): Promise<false | InstallerProcess | undefined>;
+      addToInstalled(item: StoreItem): Promise<boolean | undefined>;
+      removeFromInstalled(id: string): Promise<boolean | undefined>;
+      loadInstalledList(): Promise<StoreItem[]>;
+      writeInstalledList(list: StoreItem[]): Promise<boolean>;
+      publishPackage(data: Blob, onProgress?: FilesystemProgressCallback): Promise<boolean>;
+      publishPackageFromPath(path: string, onProgress?: FilesystemProgressCallback): Promise<boolean>;
+      getPublishedPackages(): Promise<StoreItem[]>;
+      searchStoreItems(query: string): Promise<PartialStoreItem[]>;
+      updateStoreItem(itemId: string, newData: Blob, onProgress?: FilesystemProgressCallback): Promise<boolean>;
+      updateStoreItemFromPath(itemId: string, updatePath: string, onProgress?: FilesystemProgressCallback): Promise<boolean>;
+      deprecateStoreItem(id: string): Promise<boolean>;
+      deleteStoreItem(id: string): Promise<boolean>;
+      getInstalledPackage(id: string, installedList?: StoreItem[]): Promise<StoreItem>;
+      getInstalledPackageByAppId(appId: string): Promise<StoreItem | undefined>;
+      uninstallApp(appId: string, deleteFiles?: boolean, onStage?: (stage: string) => void): Promise<boolean>;
+      checkForUpdate(id: string, installedList?: StoreItem[], allPackages?: StoreItem[]): Promise<UpdateInfo | false>;
+      checkForAllUpdates(list?: StoreItem[]): Promise<UpdateInfo[]>;
+      updatePackage(id: string, force?: boolean, progress?: FilesystemProgressCallback): Promise<InstallerProcess | false>;
+      checkBusy(action?: string): string;
+      get BUSY(): string;
+      set BUSY(value: string);
+      getAllStoreItems(): Promise<StoreItem[]>;
+      storeItemReadme(id: string): Promise<string>;
+  }
+
+  export const distributionService: Service;
+
+  export function StoreItemIcon(item: PartialStoreItem | StoreItem): string;
+
+  export function StoreItemScreenshot(item: PartialStoreItem | StoreItem, index?: number): string;
+
+  export function StoreItemBanner(item: PartialStoreItem | StoreItem): string;
+
+  export interface ElevationData {
+      what: string;
+      image: string;
+      title: string;
+      description: string;
+      level: ElevationLevel;
+  }
+
+  export enum ElevationLevel {
+      low = 0,
+      medium = 1,
+      high = 2
+  }
+
+  export function groupByTimeFrame<T extends Record<string, any>>(items: T[], column?: keyof T): Record<string, T[]>;
+
+  export interface StorePage {
+      name: string;
       icon: string;
-      caption: string;
-      subtitle: string;
-      done: number;
-      max: number;
-      cancel?: () => void;
-      waiting: boolean;
-      working: boolean;
-      errors: string[];
+      content: Component<any>;
+      hidden?: boolean;
+      separator?: boolean;
+      props?: (process: AppStoreRuntime, props: Record<string, any>) => Promise<Record<string, any>>;
+      groupName?: string;
   }
 
-  export interface FileProgressMutator {
-      progress: ReadableStore<FsProgressOperation>;
-      mutateMax: (mutator: number) => void;
-      mutDone: (mutator: number) => void;
-      mutErr: (mutator: string) => void;
-      setMax: (value: number) => void;
-      setDone: (value: number) => void;
-      setErrors: (value: string[]) => void;
-      setCancel: (cancel: (() => void) | undefined) => void;
-      updateCaption: (caption: string) => void;
-      updSub: (subtitle: string) => void;
-      setWait: (waiting: boolean) => void;
-      setWork: (waiting: boolean) => void;
-      stop: () => Promise<any>;
-      show: () => Promise<any>;
-      setType: (type: "quantity" | "size" | "none") => void;
+  export type StorePages = Map<string, StorePage>;
+
+  export const appStorePages: StorePages;
+
+  export class AppStoreRuntime extends AppProcess {
+      searchQuery: ReadableStore<string>;
+      loadingPage: ReadableStore<boolean>;
+      pageProps: ReadableStore<Record<string, any>>;
+      searching: ReadableStore<boolean>;
+      currentPage: ReadableStore<string>;
+      operations: Record<string, InstallerProcess>;
+      distrib: DistributionServiceProcess;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, page?: number, props?: Record<string, any>);
+      start(): Promise<false | undefined>;
+      render({ page, props }: {
+          page?: string;
+          props?: Record<string, any>;
+      }): Promise<false | undefined>;
+      switchPage(id: string, props?: Record<string, any>, force?: boolean): Promise<void>;
+      Search(): Promise<void>;
+      installPackage(pkg: StoreItem, onDownloadProgress?: FilesystemProgressCallback): Promise<false | 0 | InstallerProcess>;
+      updatePackage(pkg: StoreItem, onDownloadProgress?: FilesystemProgressCallback): Promise<false | 0 | InstallerProcess>;
+      deprecatePackage(pkg: StoreItem): Promise<false | undefined>;
+      deletePackage(pkg: StoreItem): Promise<false | undefined>;
+      publishPackage(): Promise<boolean | undefined>;
+      updateStoreItem(pkg: StoreItem): Promise<void>;
+      readmeFallback(pkg: StoreItem): string;
+      learnMoreBlocking(): void;
+      registerOperation(id: string, proc: InstallerProcess): boolean;
+      discardOperation(id: string): boolean;
+      getRunningOperation(pkg: StoreItem): InstallerProcess;
+      viewImage(url: string, name?: string): Promise<void>;
   }
 
-  export const DummyFileProgress: FileProgressMutator;
+  export const AppStoreApp: App;
 
-  export class FsProgressRuntime extends AppProcess {
-      Progress: ReadableStore<FsProgressOperation>;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, store: ReadableStore<FsProgressOperation>);
-      render({ store }: RenderArgs): Promise<void> | undefined;
-      onClose(): Promise<boolean>;
+  export function toForm(object: Record<string, any>): FormData;
+
+  export interface SharedDriveType {
+      userId: string;
+      accessors: string[];
+      shareName: string;
+      maxSize: number;
+      passwordHash: string;
+      description?: string;
+      locked: boolean;
+      ownerName?: string;
+      _id: string;
   }
 
-  export class GlobalLoadIndicatorRuntime extends AppProcess {
-      caption: ReadableStore<string>;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, caption: string);
+  export interface ShareCreateOptions {
+      userId: string;
+      description?: string;
+      size?: number;
+      shareName: string;
+      password: string;
   }
 
-  export interface IconPickerData {
-      forWhat: string;
-      defaultIcon: string;
-      returnId: string;
+  export class SharedDrive extends FilesystemDrive {
+      shareId: string | undefined;
+      token: string;
+      shareInfo: SharedDriveType;
+      IDENTIFIES_AS: string;
+      FILESYSTEM_SHORT: string;
+      FILESYSTEM_LONG: string;
+      protected CAPABILITIES: Record<DriveCapabilities, boolean>;
+      constructor(uuid: string, letter: string, info: SharedDriveType, token: string);
+      _spinUp(): Promise<boolean>;
+      readDir(path?: string): Promise<DirectoryReadReturn | undefined>;
+      createDirectory(path: string): Promise<boolean>;
+      readFile(path: string, onProgress: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
+      writeFile(path: string, blob: Blob, onProgress: FilesystemProgressCallback): Promise<boolean>;
+      tree(path?: string): Promise<RecursiveDirectoryReadReturn | undefined>;
+      copyItem(source: string, destination: string): Promise<boolean>;
+      moveItem(source: string, destination: string): Promise<boolean>;
+      deleteItem(path: string): Promise<boolean>;
+      quota(): Promise<UserQuota>;
+      direct(path: string): Promise<string | undefined>;
+      bulk<T = any>(path: string, extension: string): Promise<Record<string, T>>;
+      stat(path: string): Promise<FilesystemStat | undefined>;
   }
+
+  export function getAllImages(): Record<string, string>;
+
+  export function getGroupedIcons(): Record<string, Record<string, string>>;
+
+  export function getIconPath(id: string): string;
+
+  export function iconIdFromPath(path: string): string;
+
+  export function maybeIconId(id: string): string;
+
+  export const AdminScopes: {
+      adminGod: string;
+      adminAuditLog: string;
+      adminLogs: string;
+      adminGrant: string;
+      adminRevoke: string;
+      adminPreferencesGet: string;
+      adminUserfsFolder: string;
+      adminUserfsFile: string;
+      adminUserfsDirect: string;
+      adminUserfsTree: string;
+      adminUserfsQuota: string;
+      adminPreferencesPut: string;
+      adminUsersList: string;
+      adminUsersDelete: string;
+      adminUsersChangePswd: string;
+      adminUsersChangeEmail: string;
+      adminUsersApprove: string;
+      adminUsersDisapprove: string;
+      adminStats: string;
+      adminTokensGet: string;
+      adminTokensPurgeAllDelete: string;
+      adminTokensPurgeUserDelete: string;
+      adminTokensPurgeOneDelete: string;
+      adminLogout: string;
+      adminTokenDelete: string;
+      adminScopesPut: string;
+      adminScopesGet: string;
+      adminScopesAvailable: string;
+      adminBugHuntList: string;
+      adminBugHuntClose: string;
+      adminBugHuntOpen: string;
+      adminBugHuntGet: string;
+      adminBugHuntDelete: string;
+      adminBugHuntStats: string;
+      adminActivitiesList: string;
+      adminActivitiesUserGet: string;
+      adminActivitiesDelete: string;
+      adminActivitiesDeleteUser: string;
+      adminTotpGet: string;
+      adminTotpGetUser: string;
+      adminTotpDeactivateUser: string;
+      adminTotpDeleteUser: string;
+      adminAccessorsGet: string;
+      adminAccessorsGetUser: string;
+      adminAccessorsDelete: string;
+      adminAccessorsDeleteUser: string;
+      adminIndexGet: string;
+      adminIndexGetUser: string;
+      adminIndexUser: string;
+      adminIndexDeleteUser: string;
+      adminShareInteract: string;
+      adminShareList: string;
+      adminShareListUser: string;
+      adminShareDelete: string;
+      adminShareMembersGet: string;
+      adminShareKick: string;
+      adminShareAddUser: string;
+      adminShareAccessorsGet: string;
+      adminShareAccessorsDelete: string;
+      adminShareChangePswd: string;
+      adminShareRename: string;
+      adminShareChown: string;
+      adminShareQuotaGet: string;
+      adminShareQuotaPut: string;
+      adminStoreListAll: string;
+      adminStoreListUser: string;
+      adminStoreBlock: string;
+      adminStoreUnblock: string;
+      adminStoreDeleteOne: string;
+      adminStoreDeleteUser: string;
+      adminStoreDeprecate: string;
+      adminStoreUndeprecate: string;
+      adminStoreOfficialOn: string;
+      adminStoreOfficialOff: string;
+      adminStoreVerificationGet: string;
+      adminStoreVerificationSet: string;
+      adminStoreUnverify: string;
+  };
+
+  export const AdminScopeCaptions: Record<string, string>;
+
+  export interface AppKeyCombination {
+      alt?: boolean;
+      ctrl?: boolean;
+      shift?: boolean;
+      key?: string;
+      action(proc: any, event: KeyboardEvent): void;
+      global?: boolean;
+  }
+
+  export type AppKeyCombinations = AppKeyCombination[];
+
+  export function FileManagerAccelerators(runtime: FileManagerRuntime): AppKeyCombinations;
+
+  export function EditMenu(runtime: FileManagerRuntime): ContextMenuItem;
+
+  export function FileMenu(runtime: FileManagerRuntime): ContextMenuItem;
+
+  export function GoMenu(runtime: FileManagerRuntime): ContextMenuItem;
+
+  export function FileManagerAltMenu(runtime: FileManagerRuntime): ContextMenuItem[];
+
+  export class ShareManager extends BaseService {
+      token: string | undefined;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
+      getOwnedShares(): Promise<SharedDriveType[]>;
+      mountOwnedShares(): Promise<void>;
+      getJoinedShares(): Promise<SharedDriveType[]>;
+      createShare(name: string, password: string): Promise<SharedDriveType | undefined>;
+      deleteShare(shareId: string): Promise<boolean>;
+      changeSharePassword(shareId: string, newPassword: string): Promise<boolean>;
+      renameShare(shareId: string, newName: string): Promise<boolean>;
+      joinShare(username: string, shareName: string, password: string, mountAlso?: boolean): Promise<boolean | FilesystemDrive | undefined>;
+      leaveShare(shareId: string): Promise<boolean>;
+      unmountIfMounted(shareId: string): Promise<void>;
+      kickUserFromShare(shareId: string, userId: string): Promise<boolean>;
+      mountShare(username: string, shareName: string, letter?: string, onProgress?: FilesystemProgressCallback): Promise<false | FilesystemDrive | undefined>;
+      mountShareById(shareId: string, letter?: string, onProgress?: FilesystemProgressCallback): Promise<false | FilesystemDrive>;
+      getShareMembers(shareId: string): Promise<Record<string, string>>;
+      getShareInfoByName(username: string, shareName: string): Promise<SharedDriveType | undefined>;
+      getShareInfoById(shareId: string): Promise<SharedDriveType | undefined>;
+  }
+
+  export const shareService: Service;
 
   export interface Tab {
       location: string;
@@ -975,274 +1456,289 @@ declare global {
       hidden?: boolean;
   }
 
-  export function tryJsonParse<T = any>(input: any): T;
+  export function FileManagerContextMenu(runtime: FileManagerRuntime): AppContextMenu;
 
-  export function tryJsonStringify(input: any, indent: number): string;
+  export class FileManagerRuntime extends AppProcess {
+      path: ReadableStore<string>;
+      contents: ReadableStore<DirectoryReadReturn | undefined>;
+      shortcuts: ReadableStore<ShortcutStore>;
+      loading: ReadableStore<boolean>;
+      errored: ReadableStore<boolean>;
+      selection: ReadableStore<string[]>;
+      copyList: ReadableStore<string[]>;
+      cutList: ReadableStore<string[]>;
+      starting: ReadableStore<boolean>;
+      rootFolders: ReadableStore<FolderEntry[]>;
+      drives: ReadableStore<Record<string, QuotedDrive>>;
+      notice: ReadableStore<FileManagerNotice | undefined>;
+      showNotice: ReadableStore<boolean>;
+      loadSave: LoadSaveDialogData | undefined;
+      saveName: ReadableStore<string>;
+      virtual: ReadableStore<VirtualFileManagerLocation | undefined>;
+      drive: ReadableStore<FilesystemDrive | undefined>;
+      directoryListing: ReadableStore<HTMLDivElement>;
+      virtualLocations: Record<string, VirtualFileManagerLocation>;
+      private _refreshLocked;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, path?: string, loadSave?: LoadSaveDialogData);
+      contextMenu: AppContextMenu;
+      updateAltMenu(): void;
+      render({ path }: RenderArgs): Promise<void>;
+      updateDrives(): Promise<void>;
+      updateRootFolders(): Promise<void>;
+      navigate(path: string): Promise<void>;
+      refresh(): Promise<void>;
+      DirectoryNotFound(): void;
+      parentDir(): void;
+      updateSelection(e: MouseEvent, path: string): void;
+      setCopyFiles(files?: string[]): void;
+      setCutFiles(files?: string[]): void;
+      pasteFiles(): Promise<void>;
+      unmountDrive(drive: FilesystemDrive, id: string): void;
+      confirmUmountDrive(drive: FilesystemDrive, id: string): Promise<void>;
+      uploadItems(): Promise<void>;
+      lockRefresh(): void;
+      unlockRefresh(refresh?: boolean): void;
+      openFile(path: string): Promise<void>;
+      deleteSelected(): Promise<void>;
+      confirmDeleteSelected(): Promise<void>;
+      downloadSelected(): Promise<false | undefined>;
+      singlefySelected(): void;
+      selectorUp(): Promise<void>;
+      selectorDown(): Promise<void>;
+      EnterKey(alternative?: boolean): Promise<void>;
+      isDirectory(path: string, workingPath?: string): boolean | undefined;
+      confirmLoadSave(): Promise<void>;
+      createShortcut(name: string, path: string, folder?: boolean): Promise<void>;
+      checkNotice(): Promise<void>;
+      shareAccessIsAdministrative(drive: FilesystemDrive): boolean;
+  }
 
-  export function keysToLowerCase(obj: any): any;
+  export const FileManagerApp: App;
 
-  export type ValidationObject = {
-      [key: string]: any;
+  export interface Message {
+      authorId: string;
+      title: string;
+      body: string;
+      recipient: string;
+      attachments?: string[];
+      _id: string;
+      repliesTo?: string;
+      deleted?: boolean;
+      correlationId: string;
+      createdAt: string;
+      updatedAt: string;
+      author?: PublicUserInfo;
+      read: boolean;
+  }
+
+  export interface MessageCreateData {
+      title: string;
+      body: string;
+      recipients: string[];
+      attachments: File[];
+  }
+
+  export interface MessageNode extends Message {
+      replies: MessageNode[];
+  }
+
+  export interface PartialMessage {
+      _id: string;
+      authorId: string;
+      title: string;
+      recipient: string;
+      attachmentCount: number;
+      deleted?: boolean;
+      repliesTo?: string;
+      createdAt: string;
+      author?: PublicUserInfo;
+      correlationId: string;
+      read: boolean;
+  }
+
+  export type ExpandedMessage = Omit<Message, "attachments"> & {
+      attachments: MessageAttachment[];
   };
 
-  export function validateObject(target: ValidationObject, validation: ValidationObject): boolean;
+  export type ExpandedPartialMessage = Omit<PartialMessage, "attachments"> & {
+      attachments: MessageAttachment[];
+  };
 
-  export class BaseService extends Process {
-      host: ServiceHost;
-      activated: boolean;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
-      _activate(...args: any[]): Promise<void>;
-      afterActivate(): Promise<void>;
-      activate(...args: any[]): Promise<void>;
-  }
-
-  export interface BugReport {
-      authorId?: string;
-      title: string;
-      body: string;
-      logs: LogItem[];
-      closed: boolean;
-      resolved: boolean;
-      version: `${number}.${number}.${number}`;
-      location: Location;
-      userData?: Record<string, any>;
-      userAgent?: string;
-      api?: string;
-      frontend: string;
-      meta: MetaEnvironment;
-      _id?: string;
-      createdAt: string;
-      mode: string;
-      build: string;
-      public: boolean;
-  }
-
-  export interface OutgoingBugReport {
-      title: string;
-      body: string;
-      logs: LogItem[];
-      version: `${number}.${number}.${number}`;
-      location: Location;
-      userAgent?: string;
-      api?: string;
-      frontend: string;
-      meta: MetaEnvironment;
-      mode: string;
-      build: string;
-      public?: boolean;
-  }
-
-  export interface Location {
-      hash: string;
-      host: string;
-      hostname: string;
-      href: string;
-      origin: string;
-      pathname: string;
-      port: string;
-      protocol: string;
-      search: string;
-  }
-
-  export interface MetaEnvironment {
-      BASE_URL: string;
-      MODE: string;
-      DEV: boolean;
-      PROD: boolean;
-      SSR: boolean;
-      DW_SERVER_URL?: string;
-      DW_SERVER_AUTHCODE?: string;
-  }
-
-  export interface ReportStatistics extends Record<string, number> {
-      opened: number;
-      closed: number;
-      resolved: number;
-      total: number;
-      apis: number;
-  }
-
-  export interface ReportOptions {
-      title: string;
-      body?: string;
-      noLogs?: boolean;
-      anonymous?: boolean;
-      public?: boolean;
-  }
-
-  export interface Service {
-      name: string;
-      description: string;
-      process: typeof BaseService;
-      startCondition?: (daemon: UserDaemon) => MaybePromise<boolean>;
-      pid?: number;
-      id?: string;
-      initialState?: InitialServiceState;
-      loadedAt?: number;
-      changedAt?: number;
-  }
-
-  export type ServiceStore = Map<string, Service>;
-
-  export type ReadableServiceStore = ReadableStore<ServiceStore>;
-
-  export type InitialServiceState = "stopped" | "started";
-
-  export type ServiceChangeResult = "err_noExist" | "err_alreadyRunning" | "err_notRunning" | "err_startCondition" | "err_spawnFailed" | "err_noManager" | "err_elevation" | "err_managerPaused" | "success";
-
-  export class BugHuntUserSpaceProcess extends BaseService {
-      INVALIDATION_THRESHOLD: number;
-      privateCache: BugReport[];
-      publicCache: BugReport[];
-      cachedPrivateResponseCount: number;
-      cachedPublicResponseCount: number;
-      token: string | undefined;
-      module: BugHunt;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
-      activate(token: string): Promise<void>;
-      afterActivate(): Promise<void>;
-      sendBugReport(options: ReportOptions): Promise<boolean>;
-      getPrivateReports(forceInvalidate?: boolean): Promise<BugReport[]>;
-      getPublicReports(forceInvalidate?: boolean): Promise<BugReport[]>;
-      refreshPrivateCache(): Promise<false | undefined>;
-      refreshPublicCache(): Promise<false | undefined>;
-      refreshAllCaches(): Promise<false | undefined>;
-  }
-
-  export const bhuspService: Service;
-
-  export interface ArcPackage {
-      name: string;
-      author: string;
-      version: string;
-      description: string;
-      installLocation: `U:/Applications/${string}`;
-      appId: string;
-  }
-
-  export interface ProjectMetadata {
-      metadata: ArcPackage;
-      devPort?: number;
-      repository?: string;
-      outFile: string;
-      payloadDir: string;
-      buildHash?: string;
-      noHotRelaunch?: boolean;
-  }
-
-  export type DevEnvActivationResult = "success" | "ping_failed" | "port_mismatch" | "build_mismatch" | "already_connected" | "websock_failed" | "drivemnt_failed";
-
-  export const DevEnvActivationResultCaptions: Record<DevEnvActivationResult, string>;
-
-  export function toForm(object: Record<string, any>): FormData;
-
-  export class DevDrive extends FilesystemDrive {
-      FIXED: boolean;
-      REMOVABLE: boolean;
-      IDENTIFIES_AS: string;
-      FILESYSTEM_SHORT: string;
-      FILESYSTEM_LONG: string;
-      private axios;
-      private url;
-      label: string;
-      constructor(kernel: WaveKernel, uuid: string, letter: string, axios: AxiosInstance, url: string);
-      readDir(path: string): Promise<DirectoryReadReturn | undefined>;
-      createDirectory(path: string): Promise<boolean>;
-      readFile(path: string, onProgress?: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
-      writeFile(path: string, data: Blob, onProgress?: FilesystemProgressCallback): Promise<boolean>;
-      tree(path?: string): Promise<RecursiveDirectoryReadReturn | undefined>;
-      copyItem(source: string, destination: string): Promise<boolean>;
-      moveItem(source: string, destination: string): Promise<boolean>;
-      deleteItem(path: string): Promise<boolean>;
-      quota(): Promise<UserQuota>;
-      direct(path: string): Promise<string | undefined>;
-  }
-
-  export class DevelopmentEnvironment extends BaseService {
-      connected: boolean;
-      private port?;
-      private url?;
-      private client;
-      private axios?;
-      meta?: ProjectMetadata;
-      private daemon;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
-      connect(port: number): Promise<DevEnvActivationResult>;
-      disconnect(): Promise<undefined>;
-      getProjectMeta(): Promise<ProjectMetadata | undefined>;
-      mountDevDrive(): Promise<boolean | undefined>;
-      restartTpa(): Promise<undefined>;
-      killTpa(): Promise<undefined>;
-      stop(): Promise<void>;
-  }
-
-  export const devEnvironmentService: Service;
-
-  export interface SharedDriveType {
-      userId: string;
-      accessors: string[];
-      shareName: string;
-      maxSize: number;
-      passwordHash: string;
-      description?: string;
-      locked: boolean;
-      ownerName?: string;
+  export interface MessageAttachment {
+      filename: string;
+      size: number;
+      mimeType: string;
+      signature: string;
       _id: string;
   }
 
-  export interface ShareCreateOptions {
-      userId: string;
-      description?: string;
-      size?: number;
-      shareName: string;
-      password: string;
-  }
-
-  export class SharedDrive extends FilesystemDrive {
-      shareId: string | undefined;
-      token: string;
-      shareInfo: SharedDriveType;
-      IDENTIFIES_AS: string;
-      FILESYSTEM_SHORT: string;
-      FILESYSTEM_LONG: string;
-      constructor(kernel: WaveKernel, uuid: string, letter: string, info: SharedDriveType, token: string);
-      _spinUp(): Promise<boolean>;
-      readDir(path?: string): Promise<DirectoryReadReturn | undefined>;
-      createDirectory(path: string): Promise<boolean>;
-      readFile(path: string, onProgress: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
-      writeFile(path: string, blob: Blob, onProgress: FilesystemProgressCallback): Promise<boolean>;
-      tree(path?: string): Promise<RecursiveDirectoryReadReturn | undefined>;
-      copyItem(source: string, destination: string): Promise<boolean>;
-      moveItem(source: string, destination: string): Promise<boolean>;
-      deleteItem(path: string): Promise<boolean>;
-      quota(): Promise<UserQuota>;
-      direct(path: string): Promise<string | undefined>;
-      bulk<T = any>(path: string, extension: string): Promise<Record<string, T>>;
-  }
-
-  export class ShareManager extends BaseService {
-      token: string | undefined;
+  export class GlobalDispatch extends BaseService {
+      client: Socket | undefined;
+      token?: string;
+      authorized: boolean;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
-      activate(token: string): Promise<void>;
-      getOwnedShares(): Promise<SharedDriveType[]>;
-      mountOwnedShares(): Promise<void>;
-      getJoinedShares(): Promise<SharedDriveType[]>;
-      createShare(name: string, password: string): Promise<SharedDriveType | undefined>;
-      deleteShare(shareId: string): Promise<boolean>;
-      changeSharePassword(shareId: string, newPassword: string): Promise<boolean>;
-      renameShare(shareId: string, newName: string): Promise<boolean>;
-      joinShare(username: string, shareName: string, password: string, mountAlso?: boolean): Promise<boolean | FilesystemDrive>;
-      leaveShare(shareId: string): Promise<boolean>;
-      unmountIfMounted(shareId: string): Promise<void>;
-      kickUserFromShare(shareId: string, userId: string): Promise<boolean>;
-      mountShare(username: string, shareName: string, letter?: string, onProgress?: FilesystemProgressCallback): Promise<false | FilesystemDrive>;
-      mountShareById(shareId: string, letter?: string, onProgress?: FilesystemProgressCallback): Promise<false | FilesystemDrive>;
-      getShareMembers(shareId: string): Promise<Record<string, string>>;
-      getShareInfoByName(username: string, shareName: string): Promise<SharedDriveType | undefined>;
-      getShareInfoById(shareId: string): Promise<SharedDriveType | undefined>;
+      start(): Promise<void>;
+      connected(): Promise<void>;
+      subscribe<T extends Array<any> = any[]>(event: string, callback: (...data: T) => void): void;
+      emit(event: string, ...data: any[]): void;
+      stop(): Promise<void>;
+      getClients(): Promise<GlobalDispatchClient[]>;
+      disconnectClient(clientId: string): Promise<boolean>;
   }
 
-  export const shareService: Service;
+  export const globalDispatchService: Service;
+
+  export class MessagingInterface extends BaseService {
+      token: string | undefined;
+      serverUrl: string | false | undefined;
+      serverAuthCode: string;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
+      start(): Promise<void>;
+      getSentMessages(): Promise<PartialMessage[]>;
+      getReceivedMessages(): Promise<PartialMessage[]>;
+      sendMessage(subject: string, recipients: string[], body: string, attachments: File[], repliesTo?: string, onProgress?: FilesystemProgressCallback): Promise<boolean>;
+      deleteMessage(messageId: string): Promise<boolean>;
+      readMessage(messageId: string): Promise<ExpandedMessage | undefined>;
+      readAttachment(messageId: string, attachmentId: string, onProgress?: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
+      getMessageThread(messageId?: string): Promise<MessageNode[]>;
+      buildAttachment(filePath: string, onProgress?: FilesystemProgressCallback): Promise<File | undefined>;
+  }
+
+  export const messagingService: Service;
+
+  export interface MessagingPage {
+      name: string;
+      icon: string;
+      supplier: (process: MessagingAppRuntime) => Promise<PartialMessage[]> | PartialMessage[];
+  }
+
+  export const messagingPages: Record<string, MessagingPage>;
+
+  export class MessagingAppRuntime extends AppProcess {
+      service: MessagingInterface;
+      page: ReadableStore<MessagingPage | undefined>;
+      pageId: ReadableStore<string | undefined>;
+      buffer: ReadableStore<PartialMessage[]>;
+      correlated: ReadableStore<PartialMessage[][]>;
+      loading: ReadableStore<boolean>;
+      refreshing: ReadableStore<boolean>;
+      errored: ReadableStore<boolean>;
+      messageNotFound: ReadableStore<boolean>;
+      message: ReadableStore<ExpandedMessage | undefined>;
+      userInfoCache: Record<string, PublicUserInfo>;
+      searchQuery: ReadableStore<string>;
+      searchResults: ReadableStore<string[]>;
+      messageWindow: boolean;
+      messageFromFile: boolean;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, pageOrMessagePath?: string, messageId?: string);
+      render({ page }: {
+          page: string;
+      }): Promise<void>;
+      getInbox(): Promise<PartialMessage[]>;
+      getSent(): Promise<PartialMessage[]>;
+      getArchived(): Promise<PartialMessage[]>;
+      getArchiveState(): string[];
+      setArchiveState(state: string[]): void;
+      isArchived(id: string): boolean;
+      addToArchive(id: string): void;
+      removeFromArchive(id: string): void;
+      switchPage(id: string): Promise<void>;
+      refresh(): Promise<void>;
+      correlateMessages(messages: PartialMessage[]): PartialMessage[][];
+      refreshFailed(): void;
+      readMessage(messageId: string, force?: boolean): Promise<void>;
+      userInfo(userId: string): Promise<PublicUserInfo | undefined>;
+      readAttachment(attachment: MessageAttachment, messageId: string, prog: FileProgressMutator): Promise<ArrayBuffer | undefined>;
+      openAttachment(attachment: MessageAttachment, messageId: string): Promise<void>;
+      Search(query: string): void;
+      popoutMessage(messageId: string): void;
+      saveMessage(): Promise<void>;
+      readMessageFromFile(path: string): Promise<void>;
+      compose(): void;
+      replyTo(message: ExpandedMessage): void;
+      forward(message: ExpandedMessage): Promise<void>;
+      toggleArchived(message: ExpandedMessage): void;
+      deleteMessage(id: string): Promise<void>;
+  }
+
+  export const MessagingApp: App;
+
+  export const ProcessKillResultCaptions: Record<ProcessKillResult, string>;
+
+  export class ProcessManagerRuntime extends AppProcess {
+      selected: ReadableStore<number>;
+      running: ReadableStore<number>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
+      kill(proc: Process): Promise<void>;
+      killError(name: string, result: ProcessKillResult): void;
+  }
+
+  export const ProcessesApp: App;
+
+  export function SettingsContext(runtime: SettingsRuntime): AppContextMenu;
+
+  export class OverlayRuntime extends AppProcess {
+      parentProcess: SettingsRuntime;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
+  }
+
+  export const ChangePasswordApp: App;
+
+  export const ChangeUsernameApp: App;
+
+  export const SaveThemeApp: App;
+
+  export const UrlLoginBackground: App;
+
+  export const UrlProfilePicture: App;
+
+  export const UrlWallpaper: App;
+
+  export const UserFontApp: App;
+
+  export interface SettingsPage {
+      name: string;
+      icon: string;
+      content: Component<any>;
+      hidden?: boolean;
+      separator?: boolean;
+      description: string;
+      noSafeMode?: boolean;
+  }
+
+  export type SettingsPages = Map<string, SettingsPage>;
+
+  export type SettingsSlides = Map<string, Component<any>>;
+
+  export const settingsPageStore: SettingsPages;
+
+  export const SlideStore: SettingsSlides;
+
+  export class SettingsRuntime extends AppProcess {
+      currentPage: ReadableStore<string>;
+      currentSlide: ReadableStore<string>;
+      slideVisible: ReadableStore<boolean>;
+      requestedSlide: string | undefined;
+      protected overlayStore: Record<string, App>;
+      protected elevations: Record<string, ElevationData>;
+      contextMenu: AppContextMenu;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, page?: string, slide?: string);
+      render(): Promise<void>;
+      switchPage(pageId: string): void;
+      showSlide(id: string): Promise<void>;
+      loginActivity(): Promise<void>;
+      logOutEverywhere(): Promise<void>;
+      uploadWallpaper(): Promise<void>;
+      viewLicense(): Promise<void>;
+      deleteThemeConfirmation(id?: string): void;
+      chooseProfilePicture(): Promise<void>;
+      chooseWallpaper(): Promise<void>;
+      chooseLoginBackground(): Promise<void>;
+      setup2fa(): Promise<void>;
+      disableTotp(): Promise<void>;
+  }
+
+  export const SystemSettings: App;
 
   export class AdminServerDrive extends FilesystemDrive {
       private targetUsername;
@@ -1252,8 +1748,9 @@ declare global {
       IDENTIFIES_AS: string;
       FILESYSTEM_SHORT: string;
       FILESYSTEM_LONG: string;
-      constructor(kernel: WaveKernel, uuid: string, letter: string, token: string, targetUsername: string);
-      _spinUp(onProgress?: FilesystemProgressCallback): Promise<boolean>;
+      protected CAPABILITIES: Record<DriveCapabilities, boolean>;
+      constructor(uuid: string, letter: string, token: string, targetUsername: string);
+      _spinUp(): Promise<boolean>;
       writeFile(path: string, data: Blob, onProgress?: FilesystemProgressCallback): Promise<boolean>;
       createDirectory(path: string): Promise<boolean>;
       deleteItem(path: string): Promise<boolean>;
@@ -1265,6 +1762,7 @@ declare global {
       quota(): Promise<UserQuota>;
       direct(path: string): Promise<string | undefined>;
       bulk<T = any>(path: string, extension: string): Promise<Record<string, T>>;
+      stat(path: string): Promise<FilesystemStat | undefined>;
   }
 
   export interface Activity {
@@ -1377,7 +1875,6 @@ declare global {
 
   export interface ServerStatistics {
       counts: ServerStatGroup;
-      sizes: ServerStatGroup;
       endpoints: number;
   }
 
@@ -1435,82 +1932,37 @@ declare global {
       tokens: number;
   }
 
-  export const AdminScopes: {
-      adminGod: string;
-      adminAuditLog: string;
-      adminLogs: string;
-      adminGrant: string;
-      adminRevoke: string;
-      adminPreferencesGet: string;
-      adminUserfsFolder: string;
-      adminUserfsFile: string;
-      adminUserfsDirect: string;
-      adminUserfsTree: string;
-      adminUserfsQuota: string;
-      adminPreferencesPut: string;
-      adminUsersList: string;
-      adminUsersDelete: string;
-      adminUsersChangePswd: string;
-      adminUsersChangeEmail: string;
-      adminUsersApprove: string;
-      adminUsersDisapprove: string;
-      adminStats: string;
-      adminTokensGet: string;
-      adminTokensPurgeAllDelete: string;
-      adminTokensPurgeUserDelete: string;
-      adminTokensPurgeOneDelete: string;
-      adminScopesPut: string;
-      adminScopesGet: string;
-      adminScopesAvailable: string;
-      adminBugHuntList: string;
-      adminBugHuntClose: string;
-      adminBugHuntOpen: string;
-      adminBugHuntGet: string;
-      adminBugHuntDelete: string;
-      adminBugHuntStats: string;
-      adminActivitiesList: string;
-      adminActivitiesUserGet: string;
-      adminActivitiesDelete: string;
-      adminActivitiesDeleteUser: string;
-      adminTotpGet: string;
-      adminTotpGetUser: string;
-      adminTotpDeactivateUser: string;
-      adminTotpDeleteUser: string;
-      adminAccessorsGet: string;
-      adminAccessorsGetUser: string;
-      adminAccessorsDelete: string;
-      adminAccessorsDeleteUser: string;
-      adminIndexGet: string;
-      adminIndexGetUser: string;
-      adminIndexUser: string;
-      adminIndexDeleteUser: string;
-      adminShareInteract: string;
-      adminShareList: string;
-      adminShareListUser: string;
-      adminShareDelete: string;
-      adminShareMembersGet: string;
-      adminShareKick: string;
-      adminShareAddUser: string;
-      adminShareAccessorsGet: string;
-      adminShareAccessorsDelete: string;
-      adminShareChangePswd: string;
-      adminShareRename: string;
-      adminShareChown: string;
-      adminShareQuotaGet: string;
-      adminShareQuotaPut: string;
-  };
-
-  export const AdminScopeCaptions: Record<string, string>;
+  export class AdminFileSystem extends FilesystemDrive {
+      private token;
+      READONLY: boolean;
+      FIXED: boolean;
+      IDENTIFIES_AS: string;
+      FILESYSTEM_SHORT: string;
+      FILESYSTEM_LONG: string;
+      label: string;
+      protected CAPABILITIES: Record<DriveCapabilities, boolean>;
+      constructor(uuid: string, letter: string, token: string);
+      writeFile(path: string, data: Blob, onProgress?: FilesystemProgressCallback): Promise<boolean>;
+      createDirectory(path: string): Promise<boolean>;
+      deleteItem(path: string): Promise<boolean>;
+      copyItem(source: string, destination: string): Promise<boolean>;
+      moveItem(source: string, destination: string): Promise<boolean>;
+      readDir(path?: string): Promise<DirectoryReadReturn | undefined>;
+      readFile(path: string, onProgress: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
+      tree(path?: string): Promise<RecursiveDirectoryReadReturn | undefined>;
+      quota(): Promise<UserQuota>;
+      bulk<T = any>(path: string, extension: string): Promise<Record<string, T>>;
+      direct(path: string): Promise<string | undefined>;
+      stat(path: string): Promise<FilesystemStat | undefined>;
+  }
 
   export class AdminBootstrapper extends BaseService {
       private token;
-      private availableScopes;
       private userInfo;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
-      activate(token: string): Promise<void>;
-      afterActivate(): Promise<void>;
+      start(): Promise<void>;
       getUserInfo(): Promise<UserInfo | undefined>;
-      mountUserDrive(username: string, driveLetter?: string, onProgress?: FilesystemProgressCallback): Promise<false | FilesystemDrive>;
+      mountUserDrive(username: string, driveLetter?: string, onProgress?: FilesystemProgressCallback): Promise<false | FilesystemDrive | undefined>;
       mountAllUsers(): Promise<void>;
       getAllUsers(): Promise<ExpandedUserInfo[]>;
       getUserByUsername(username: string): Promise<UserInfo | undefined>;
@@ -1575,174 +2027,26 @@ declare global {
       getShareQuotaOf(shareId: string): Promise<UserQuota | undefined>;
       unlockShare(shareId: string): Promise<boolean>;
       lockShare(shareId: string): Promise<boolean>;
+      deleteStoreItem(_id: string): Promise<boolean>;
+      deleteUserStoreItems(userId: string): Promise<boolean>;
+      getAllStoreItems(): Promise<StoreItem[]>;
+      getUserStoreItems(userId: string): Promise<StoreItem[]>;
+      deprecatePackage(itemId: string): Promise<boolean>;
+      undeprecatePackage(itemId: string): Promise<boolean>;
+      getStoreItem(id: string): Promise<StoreItem | undefined>;
+      getStoreItemByName(name: string): Promise<StoreItem | undefined>;
+      blockStoreItem(id: string, reason?: string): Promise<boolean>;
+      unblockStoreItem(id: string, reason?: string): Promise<boolean>;
+      storeItemMakeOfficial(id: string): Promise<boolean>;
+      storeItemMakeNotOfficial(id: string): Promise<boolean>;
+      readStoreItemFiles(id: string, onProgress?: FilesystemProgressCallback, onStatus?: (s: string) => void): Promise<string | false>;
+      deleteStoreItemVerification(id: string): Promise<boolean>;
+      verifyStoreItem(id: string, note: string): Promise<boolean>;
   }
 
   export const adminService: Service;
 
-  export interface Message {
-      authorId: string;
-      title: string;
-      body: string;
-      recipient: string;
-      attachments?: string[];
-      _id: string;
-      repliesTo?: string;
-      deleted?: boolean;
-      correlationId: string;
-      createdAt: string;
-      updatedAt: string;
-      author?: PublicUserInfo;
-  }
-
-  export interface MessageCreateData {
-      title: string;
-      body: string;
-      recipients: string[];
-      attachments: File[];
-  }
-
-  export interface MessageNode extends Message {
-      replies: MessageNode[];
-  }
-
-  export interface PartialMessage {
-      authorId: string;
-      title: string;
-      recipient: string;
-      attachmentCount: number;
-      deleted?: boolean;
-      _id: string;
-      repliesTo?: string;
-      createdAt: string;
-      author?: PublicUserInfo;
-      correlationId: string;
-  }
-
-  export type ExpandedMessage = Omit<Message, "attachments"> & {
-      attachments: MessageAttachment[];
-  };
-
-  export type ExpandedPartialMessage = Omit<PartialMessage, "attachments"> & {
-      attachments: MessageAttachment[];
-  };
-
-  export interface MessageAttachment {
-      filename: string;
-      size: number;
-      mimeType: string;
-      signature: string;
-      _id: string;
-  }
-
-  export class GlobalDispatch extends BaseService {
-      client: Socket | undefined;
-      token?: string;
-      authorized: boolean;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
-      activate(token: string): Promise<void>;
-      connected(token: string): Promise<void>;
-      subscribe<T extends Array<any> = any[]>(event: string, callback: (...data: T) => void): void;
-      emit(event: string, ...data: any[]): void;
-      stop(): Promise<void>;
-      getClients(): Promise<GlobalDispatchClient[]>;
-      disconnectClient(clientId: string): Promise<boolean>;
-  }
-
-  export const globalDispatchService: Service;
-
-  export class MessagingInterface extends BaseService {
-      token: string | undefined;
-      serverUrl: string | false | undefined;
-      serverAuthCode: string;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
-      activate(token: string): Promise<void>;
-      getSentMessages(): Promise<PartialMessage[]>;
-      getReceivedMessages(): Promise<PartialMessage[]>;
-      sendMessage(subject: string, recipients: string[], body: string, attachments: File[], repliesTo?: string, onProgress?: FilesystemProgressCallback): Promise<boolean>;
-      deleteMessage(messageId: string): Promise<boolean>;
-      readMessage(messageId: string): Promise<ExpandedMessage | undefined>;
-      readAttachment(messageId: string, attachmentId: string, onProgress?: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
-      getMessageThread(messageId?: string): Promise<MessageNode[]>;
-      buildAttachment(filePath: string, onProgress?: FilesystemProgressCallback): Promise<File | undefined>;
-  }
-
-  export const messagingService: Service;
-
-  export class ServiceHost extends Process {
-      Services: ReadableServiceStore;
-      _holdRestart: boolean;
-      private _storeLoaded;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number);
-      readonly STORE: Map<string, {
-          name: string;
-          description: string;
-          process: typeof BaseService;
-          startCondition?: (daemon: UserDaemon) => MaybePromise<boolean>;
-          pid?: number;
-          id?: string;
-          initialState?: InitialServiceState;
-          loadedAt?: number;
-          changedAt?: number;
-      }>;
-      loadStore(store: ServiceStore): boolean;
-      getServiceInfo(id: string): Service | undefined;
-      startService(id: string): Promise<"success" | "err_noExist" | "err_alreadyRunning" | "err_startCondition" | "err_spawnFailed">;
-      stopService(id: string): Promise<ServiceChangeResult>;
-      restartService(id: string): Promise<ServiceChangeResult>;
-      initialRun(): Promise<void>;
-      init(): Promise<void>;
-      verifyServicesProcesses(): Promise<void>;
-      getService<T extends BaseService = BaseService>(id: string): T | undefined;
-      stop(): Promise<void>;
-  }
-
-  export class ApplicationStorage extends BaseService {
-      private origins;
-      private injectedStore;
-      buffer: ReadableStore<AppStorage>;
-      appIconCache: Record<string, string>;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
-      start(): Promise<void>;
-      loadOrigin(id: string, store: AppStoreCb): boolean;
-      unloadOrigin(id: string): boolean;
-      loadApp(app: App): false | App;
-      injected(): {
-          metadata: AppMetadata;
-          size: Size;
-          minSize: Size;
-          maxSize: Size;
-          position: MaybeCenteredPosition;
-          state: AppState;
-          controls: WindowControls;
-          assets: AppAssets;
-          autoRun?: boolean;
-          core?: boolean;
-          hidden?: boolean;
-          overlay?: boolean;
-          glass?: boolean;
-          thirdParty?: false;
-          id: string;
-          originId?: string;
-          entrypoint?: string;
-          workingDirectory?: string;
-          opens?: {
-              extensions?: string[];
-              mimeTypes?: string[];
-          };
-          elevated?: boolean;
-          acceleratorDescriptions?: Record<string, string>;
-          fileSignatures?: Record<string, string>;
-          process?: ThirdPartyAppProcess;
-          tpaRevision?: number;
-          noSafeMode?: boolean;
-          vital?: boolean;
-      }[];
-      refresh(): Promise<void>;
-      get(): Promise<any[]>;
-      getAppById(id: string, fromBuffer?: boolean): Promise<App | undefined>;
-  }
-
-  export const appStoreService: Service;
+  export function FileMenu(process: AdminPortalRuntime): ContextMenuItem;
 
   export interface AdminPortalPage {
       name: string;
@@ -1798,6 +2102,15 @@ declare global {
       users: ExpandedUserInfo[];
   };
 
+  export type StoreData = {
+      items: StoreItem[];
+      users: ExpandedUserInfo[];
+  };
+
+  export type ViewStoreItemData = {
+      item: StoreItem;
+  };
+
   export type TokensData = {
       tokens: ExpandedToken[];
       users: ExpandedUserInfo[];
@@ -1819,12 +2132,14 @@ declare global {
 
   export type AuditLogData = {
       users: ExpandedUserInfo[];
-      audits: AuditLog[];
+      audits: AuditLog[][];
   };
 
   export type UsersPageFilters = "all" | "regular" | "admins" | "disapproved" | "online";
 
   export type SharesPageFilters = "all" | "resized" | "locked";
+
+  export type StorePageFilters = "all" | "official" | "deprecated";
 
   export interface SpecificAdminAction {
       caption: string;
@@ -1836,11 +2151,24 @@ declare global {
 
   export type SpecificAdminActions = Record<string, SpecificAdminAction>;
 
+  export interface FilesystemsPageQuota extends Record<string, any> {
+      user: ExpandedUserInfo;
+      used: number;
+      max: number;
+      free: number;
+      percentage: number;
+      unknown?: boolean;
+  }
+
   export const AdminPortalPageStore: AdminPortalPages;
 
   export const LogoTranslations: Record<string, string>;
 
   export const specificAdminActions: SpecificAdminActions;
+
+  export function PageMenu(process: AdminPortalRuntime): ContextMenuItem;
+
+  export function AdminPortalAltMenu(process: AdminPortalRuntime): ContextMenuItem[];
 
   export class BugHuntUserDataRuntime extends AppProcess {
       data: UserInfo;
@@ -1856,10 +2184,11 @@ declare global {
       currentPage: ReadableStore<string>;
       switchPageProps: ReadableStore<Record<string, any>>;
       redacted: ReadableStore<boolean>;
+      propSize: ReadableStore<number>;
       shares: ShareManager;
       admin: AdminBootstrapper;
       protected overlayStore: Record<string, App>;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, page?: string);
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, page?: string, props?: Record<string, any>);
       switchPage(pageId: string, props?: Record<string, any>, force?: boolean): Promise<void>;
   }
 
@@ -1882,20 +2211,6 @@ declare global {
 
   export const AcceleratorOverviewApp: App;
 
-  export interface ElevationData {
-      what: string;
-      image: string;
-      title: string;
-      description: string;
-      level: ElevationLevel;
-  }
-
-  export enum ElevationLevel {
-      low = 0,
-      medium = 1,
-      high = 2
-  }
-
   export class AppInfoRuntime extends AppProcess {
       targetApp: ReadableStore<App>;
       targetAppId: string;
@@ -1908,51 +2223,16 @@ declare global {
 
   export const AppInfoApp: App;
 
-  export function UUID(): string;
-
-  export type InstallStatusType = "mkdir" | "file" | "registration" | "other";
-
-  export type InstallStatusMode = "done" | "failed" | "working";
-
-  export interface InstallStatusItem {
-      type: InstallStatusType;
-      status: InstallStatusMode;
-      content: string;
-  }
-
-  export type InstallStatus = Record<string, InstallStatusItem>;
-
   export class AppInstallerRuntime extends AppProcess {
-      status: ReadableStore<InstallStatus>;
-      failReason: ReadableStore<string>;
-      installing: ReadableStore<boolean>;
-      completed: ReadableStore<boolean>;
-      focused: ReadableStore<string>;
-      verboseLog: string[];
+      progress?: InstallerProcess;
       metadata?: ArcPackage;
       zip?: JSZip;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, metadata: ReadableStore<ArcPackage>, zip: JSZip);
       start(): Promise<false | undefined>;
       render(): Promise<void>;
-      logStatus(content: string, type?: InstallStatusType, status?: InstallStatusMode): void;
-      setCurrentStatus(status: InstallStatusMode): Promise<void>;
-      setCurrentContent(content: string): Promise<void>;
-      fail(reason: string): void;
-      viewLog(): Promise<void>;
-      go(): Promise<void>;
-      getFiles(): Promise<{
-          files: {
-              [k: string]: JSZip.JSZipObject;
-          };
-          sortedPaths: string[];
-      }>;
-      createInstallLocation(): Promise<boolean>;
-      registerApp(): Promise<boolean>;
-      mkdir(path: string): Promise<boolean>;
-      writeFile(path: string, content: ArrayBuffer): Promise<boolean>;
-      onClose(): Promise<boolean>;
       revert(): Promise<void>;
       runNow(): void;
+      go(): Promise<void>;
   }
 
   export const AppInstallerApp: App;
@@ -1970,33 +2250,75 @@ declare global {
 
   export const AppPreinstallApp: App;
 
-  export const ArcFind: App;
+  export function isPopulatable(app: App): boolean;
 
-  export function WindowSystemContextMenu(runtime: ContextMenuRuntime): AppContextMenu;
+  export function RegisteredProcess(process: RegisteredProcess): App;
 
-  export class ContextMenuRuntime extends AppProcess {
-      contextData: ReadableStore<ContextMenuInstance | null>;
-      CLICKLOCKED: boolean;
-      contextProps: Record<string, any[]>;
-      private readonly validContexMenuTags;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
-      start(): Promise<false | undefined>;
-      render(): Promise<void>;
-      createContextMenu(data: ContextMenuInstance): Promise<void>;
-      closeContextMenu(): void;
-      assignContextMenuHooks(): void;
-      handleContext(e: MouseEvent): Promise<void>;
-      getWindowByEventTarget(target: EventTarget[]): HTMLDivElement | null;
-      composePosition(x: number, y: number, mW: number, mH: number): [
-          number,
-          number
-      ];
-      getContextEntry(pid: number, scope: string): ContextMenuItem[];
-      getContextMenuScope(e: MouseEvent): HTMLDivElement | null;
-      onClose(): Promise<boolean>;
+  export interface SearchItem {
+      caption: string;
+      action: (item?: SearchItem) => void;
+      image?: string;
+      description?: string;
   }
 
+  export type SearchProvider = () => Promise<SearchItem[]> | SearchItem[];
+
+  export class ArcFindRuntime extends AppProcess {
+      private fileSystemIndex;
+      private searchItems;
+      loading: ReadableStore<boolean>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
+      start(): Promise<void>;
+      refresh(): Promise<SearchItem[] | undefined>;
+      Search(query: string): Promise<{
+          id: string;
+          item: SearchItem;
+          refIndex: number;
+          score?: number;
+          matches?: ReadonlyArray<FuseResultMatch>;
+      }[]>;
+      getFilesystemSearchSupplier(preferences: UserPreferences): Promise<SearchItem[]>;
+      getAppSearchSupplier(preferences: UserPreferences): Promise<SearchItem[]>;
+      getFlatTree(): Promise<PathedFileEntry[]>;
+  }
+
+  export const ArcFind: App;
+
   export const ContextMenuApp: App;
+
+  export class ServerDrive extends FilesystemDrive {
+      private token;
+      label: string;
+      FIXED: boolean;
+      IDENTIFIES_AS: string;
+      FILESYSTEM_SHORT: string;
+      FILESYSTEM_LONG: string;
+      protected CAPABILITIES: Record<DriveCapabilities, boolean>;
+      constructor(uuid: string, letter: string, token: string);
+      readDir(path?: string): Promise<DirectoryReadReturn | undefined>;
+      createDirectory(path: string): Promise<boolean>;
+      readFile(path: string, onProgress: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
+      writeFile(path: string, blob: Blob, onProgress: FilesystemProgressCallback): Promise<boolean>;
+      tree(path?: string): Promise<RecursiveDirectoryReadReturn | undefined>;
+      copyItem(source: string, destination: string): Promise<boolean>;
+      moveItem(source: string, destination: string): Promise<boolean>;
+      deleteItem(path: string): Promise<boolean>;
+      quota(): Promise<UserQuota>;
+      direct(path: string): Promise<string | undefined>;
+      bulk<T = any>(path: string, extension: string): Promise<Record<string, T>>;
+      stat(path: string): Promise<FilesystemStat | undefined>;
+  }
+
+  export class DriveInfoRuntime extends AppProcess {
+      drive?: FilesystemDrive;
+      isUserFs: boolean;
+      usage?: CategorizedDiskUsage;
+      quota?: UserQuota;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, drive: FilesystemDrive);
+      start(): Promise<false | undefined>;
+  }
+
+  export const DriveInfoApp: App;
 
   export interface ExitAction {
       caption: string;
@@ -2010,10 +2332,59 @@ declare global {
   export class ExitRuntime extends AppProcess {
       selected: ReadableStore<string>;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, selected?: string);
-      go(action: ExitAction | undefined, alternate?: boolean): void;
+      go(action: ExitAction | undefined, alternate?: boolean): Promise<void>;
   }
 
   export const ExitApp: App;
+
+  export const ChooseProfilePictureApp: App;
+
+  export interface FirstRunPage {
+      name: string;
+      component: any;
+      hero?: boolean;
+      actions: {
+          left: Action[];
+          right: Action[];
+      };
+  }
+
+  export interface Action {
+      caption: string;
+      suggested?: boolean;
+      disabled?: boolean;
+      action: (process: FirstRunRuntime) => void;
+  }
+
+  export interface FirstRunTheme {
+      name: string;
+      subtitle: string;
+      image: string;
+      configuration: {
+          style: string;
+          wallpaper: string;
+          accent: string;
+      };
+  }
+
+  export const FirstRunPages: Map<string, FirstRunPage>;
+
+  export const FirstRunThemes: Record<string, FirstRunTheme>;
+
+  export const FirstRunShortcuts: Record<string, ArcShortcut>;
+
+  export class FirstRunRuntime extends AppProcess {
+      done: ReadableStore<boolean>;
+      currentPage: ReadableStore<FirstRunPage>;
+      protected overlayStore: Record<string, App>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, daemon: UserDaemon);
+      render(): Promise<void>;
+      onClose(): Promise<boolean>;
+      switchPage(id: string): void;
+      chooseProfilePicture(): void;
+  }
+
+  export const FirstRunApp: App;
 
   export class NewFileRuntime extends AppProcess {
       newFile: ReadableStore<string>;
@@ -2037,6 +2408,17 @@ declare global {
 
   export const FsProgressApp: App;
 
+  export class FsProgressFailRuntime extends AppProcess {
+      prog?: FsProgressRuntime;
+      errors: string[];
+      icon: string;
+      title: string;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, prog: FsProgressRuntime);
+      start(): Promise<false | undefined>;
+  }
+
+  export const FsProgressFailApp: App;
+
   export class RenameItemRuntime extends AppProcess {
       newName: ReadableStore<string>;
       parentDir: string;
@@ -2047,18 +2429,6 @@ declare global {
   }
 
   export const FsRenameItemApp: App;
-
-  export const GlobalLoadIndicatorApp: App;
-
-  export function getAllImages(): Record<string, string>;
-
-  export function getGroupedIcons(): Record<string, Record<string, string>>;
-
-  export function getIconPath(id: string): string;
-
-  export function iconIdFromPath(path: string): string;
-
-  export function maybeIconId(id: string): string;
 
   export class IconPickerRuntime extends AppProcess {
       forWhat?: string;
@@ -2098,16 +2468,12 @@ declare global {
   export class ItemInfoRuntime extends AppProcess {
       info: ReadableStore<ItemInfo>;
       shortcut: ReadableStore<ArcShortcut>;
-      drive: FilesystemDrive | undefined;
-      isDrive: boolean;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, path: string, file: FileEntry | FolderEntry);
       start(): Promise<false | undefined>;
       render({ path, file }: RenderArgs): Promise<void>;
       open(): Promise<void>;
       openWith(path: string): Promise<void>;
       renameItem(): Promise<void>;
-      unmount(): void;
-      confirmUmountDrive(drive: FilesystemDrive, id: string): Promise<void>;
   }
 
   export const ItemInfoApp: App;
@@ -2137,6 +2503,67 @@ declare global {
   }
 
   export const MessageComposerApp: App;
+
+  export interface MultiUpdateStatusNode {
+      state: "pending" | "working" | "success" | "failed" | "downloading";
+      max: number;
+      done: number;
+      pkg: StoreItem;
+  }
+
+  export const StateIconTranslations: Record<string, string>;
+
+  export type MultiUpdateStatus = MultiUpdateStatusNode[];
+
+  export class MultiUpdateGuiRuntime extends AppProcess {
+      private updates;
+      private distrib;
+      private win;
+      status: ReadableStore<MultiUpdateStatus>;
+      currentPackage: ReadableStore<StoreItem | undefined>;
+      working: ReadableStore<boolean>;
+      done: ReadableStore<boolean>;
+      errored: ReadableStore<string[]>;
+      logs: ReadableStore<Record<string, InstallStatus>>;
+      focused: ReadableStore<string>;
+      showLog: ReadableStore<boolean>;
+      unified: ReadableStore<boolean>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, updates: UpdateInfo[]);
+      start(): Promise<false | undefined>;
+      render(): Promise<void>;
+      updatePackageStatus(appId: string, newData: Partial<MultiUpdateStatusNode>): void;
+      packageFailed(appId: string): void;
+      go(): Promise<void>;
+      onClose(): Promise<boolean>;
+      checkForErrors(): void;
+      mainAction(): void;
+      toggleLog(): void;
+  }
+
+  export const MultiUpdateGuiApp: App;
+
+  export interface ParsedStackUrl {
+      userId?: string;
+      timestamp?: string;
+      appId?: string;
+      filename?: string;
+  }
+
+  export type ParsedStackFrame = StackFrame & {
+      parsed?: ParsedStackUrl;
+  };
+
+  export class OopsStackTracerRuntime extends AppProcess {
+      data: App;
+      proc?: AppProcess;
+      exception: Error | PromiseRejectionEvent;
+      stackFrames: ParsedStackFrame[];
+      trace: string;
+      string: string;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, data: App, exception: Error | PromiseRejectionEvent, process: AppProcess | undefined, stackFrames: ParsedStackFrame[]);
+  }
+
+  export const OopsStackTracerApp: App;
 
   export class OpenWithRuntime extends AppProcess {
       available: ReadableStore<FileOpenerResult[]>;
@@ -2175,83 +2602,6 @@ declare global {
   }
 
   export const SecureContextApp: App;
-
-  export interface AppKeyCombination {
-      alt?: boolean;
-      ctrl?: boolean;
-      shift?: boolean;
-      key?: string;
-      action(proc: any, event: KeyboardEvent): void;
-      global?: boolean;
-  }
-
-  export type AppKeyCombinations = AppKeyCombination[];
-
-  export function FileManagerAccelerators(runtime: FileManagerRuntime): AppKeyCombinations;
-
-  export function EditMenu(runtime: FileManagerRuntime): ContextMenuItem;
-
-  export function FileMenu(runtime: FileManagerRuntime): ContextMenuItem;
-
-  export function GoMenu(runtime: FileManagerRuntime): ContextMenuItem;
-
-  export function FileManagerAltMenu(runtime: FileManagerRuntime): ContextMenuItem[];
-
-  export function FileManagerContextMenu(runtime: FileManagerRuntime): AppContextMenu;
-
-  export class FileManagerRuntime extends AppProcess {
-      path: ReadableStore<string>;
-      contents: ReadableStore<DirectoryReadReturn | undefined>;
-      shortcuts: ReadableStore<ShortcutStore>;
-      loading: ReadableStore<boolean>;
-      errored: ReadableStore<boolean>;
-      selection: ReadableStore<string[]>;
-      copyList: ReadableStore<string[]>;
-      cutList: ReadableStore<string[]>;
-      starting: ReadableStore<boolean>;
-      rootFolders: ReadableStore<FolderEntry[]>;
-      drives: ReadableStore<Record<string, QuotedDrive>>;
-      notice: ReadableStore<FileManagerNotice | undefined>;
-      showNotice: ReadableStore<boolean>;
-      loadSave: LoadSaveDialogData | undefined;
-      saveName: ReadableStore<string>;
-      virtual: ReadableStore<VirtualFileManagerLocation | undefined>;
-      directoryListing: ReadableStore<HTMLDivElement>;
-      virtualLocations: Record<string, VirtualFileManagerLocation>;
-      private _refreshLocked;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, path?: string, loadSave?: LoadSaveDialogData);
-      contextMenu: AppContextMenu;
-      updateAltMenu(): void;
-      render({ path }: RenderArgs): Promise<void>;
-      updateDrives(): Promise<void>;
-      updateRootFolders(): Promise<void>;
-      navigate(path: string): Promise<void>;
-      refresh(): Promise<void>;
-      DirectoryNotFound(): void;
-      parentDir(): void;
-      updateSelection(e: MouseEvent, path: string): void;
-      setCopyFiles(files?: string[]): void;
-      setCutFiles(files?: string[]): void;
-      pasteFiles(): Promise<void>;
-      unmountDrive(drive: FilesystemDrive, id: string): void;
-      confirmUmountDrive(drive: FilesystemDrive, id: string): Promise<void>;
-      uploadItems(): Promise<void>;
-      lockRefresh(): void;
-      unlockRefresh(refresh?: boolean): void;
-      openFile(path: string): Promise<void>;
-      deleteSelected(): Promise<void>;
-      confirmDeleteSelected(): Promise<void>;
-      downloadSelected(): Promise<false | undefined>;
-      singlefySelected(): void;
-      selectorUp(): Promise<void>;
-      selectorDown(): Promise<void>;
-      EnterKey(alternative?: boolean): Promise<void>;
-      isDirectory(path: string, workingPath?: string): boolean | undefined;
-      confirmLoadSave(): Promise<void>;
-      createShortcut(name: string, path: string, folder?: boolean): Promise<void>;
-      checkNotice(): Promise<void>;
-      shareAccessIsAdministrative(drive: FilesystemDrive): boolean;
-  }
 
   export class ShareConnGuiRuntime extends AppProcess {
       shareUsername: ReadableStore<string>;
@@ -2441,25 +2791,13 @@ declare global {
 
   export const SystemShortcuts: App;
 
-  export class TerminalWindowRuntime extends AppProcess {
-      term: Terminal | undefined;
-      overridePopulatable: boolean;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
-      render(): Promise<void>;
-      protected stop(): Promise<void>;
-  }
-
-  export const TerminalWindowApp: App;
-
   export class TotpAuthGuiRuntime extends AppProcess {
       private token;
       private dispatchId;
-      digits: ReadableStore<(number | undefined)[]>;
-      inputs: ReadableStore<HTMLInputElement[]>;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, token: string, dispatchId: string);
       render(args: RenderArgs): false | undefined;
-      validate(): boolean;
-      verifyTotp(): Promise<boolean>;
+      validate(code: string): boolean;
+      verifyTotp(code: string): Promise<boolean>;
       doDispatch(): Promise<void>;
       cancel(): Promise<void>;
       cantAccess(): void;
@@ -2468,8 +2806,7 @@ declare global {
   export const TotpAuthGuiApp: App;
 
   export class TotpSetupGuiRuntime extends AppProcess {
-      digits: ReadableStore<(number | undefined)[]>;
-      inputs: ReadableStore<HTMLInputElement[]>;
+      code: ReadableStore<string>;
       url: ReadableStore<string>;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
       render(): Promise<void>;
@@ -2481,81 +2818,79 @@ declare global {
 
   export const TrayHost: App;
 
-  export class OverlayRuntime extends AppProcess {
-      parentProcess: SettingsRuntime;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
-  }
-
-  export const ChangePasswordApp: App;
-
-  export const ChangeUsernameApp: App;
-
-  export const SaveThemeApp: App;
-
-  export const UrlLoginBackground: App;
-
-  export const UrlProfilePicture: App;
-
-  export const UrlWallpaper: App;
-
-  export const UserFontApp: App;
-
-  export interface SettingsPage {
-      name: string;
+  export interface FileDefinition {
+      friendlyName: string;
       icon: string;
-      content: Component<any>;
-      hidden?: boolean;
-      separator?: boolean;
-      description: string;
-      noSafeMode?: boolean;
   }
 
-  export type SettingsPages = Map<string, SettingsPage>;
-
-  export type SettingsSlides = Map<string, Component<any>>;
-
-  export const settingsPageStore: SettingsPages;
-
-  export const SlideStore: SettingsSlides;
-
-  export class SettingsRuntime extends AppProcess {
-      currentPage: ReadableStore<string>;
-      currentSlide: ReadableStore<string>;
-      slideVisible: ReadableStore<boolean>;
-      requestedSlide: string | undefined;
-      protected overlayStore: Record<string, App>;
-      protected elevations: Record<string, ElevationData>;
-      contextMenu: AppContextMenu;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, page?: string, slide?: string);
-      render(): Promise<void>;
-      switchPage(pageId: string): void;
-      showSlide(id: string): Promise<void>;
-      loginActivity(): Promise<void>;
-      logOutEverywhere(): Promise<void>;
-      uploadWallpaper(): Promise<void>;
-      viewLicense(): Promise<void>;
-      deleteThemeConfirmation(id?: string): void;
-      chooseProfilePicture(): Promise<void>;
-      chooseWallpaper(): Promise<void>;
-      chooseLoginBackground(): Promise<void>;
-      setup2fa(): Promise<void>;
-      disableTotp(): Promise<void>;
+  export interface FileAssociationConfig {
+      associations: {
+          apps: Record<string, string[]>;
+          handlers: Record<string, string[]>;
+      };
+      definitions: Record<string, FileDefinition>;
   }
+
+  export interface BaseFileAssociationInfo {
+      extension: string;
+      handledBy?: {
+          app?: string;
+          handler?: string;
+      };
+      icon?: string;
+      friendlyName?: string;
+  }
+
+  export interface ExpandedFileAssociationInfo {
+      extension: string;
+      handledBy: {
+          app?: App;
+          handler?: FileHandler;
+      };
+      icon: string;
+      friendlyName: string;
+  }
+
+  export const AudioFileDefinitions: Record<string, FileDefinition>;
+
+  export const ImageFileDefinitions: Record<string, FileDefinition>;
+
+  export const VideoFileDefinitions: Record<string, FileDefinition>;
+
+  export const DefaultFileDefinitions: Record<string, FileDefinition>;
+
+  export class UpdateNotifierRuntime extends AppProcess {
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
+      start(): Promise<false | undefined>;
+      onClose(): Promise<boolean>;
+      updateFileDefinitions(): Promise<void>;
+  }
+
+  export const UpdateNotifierApp: App;
 
   export function WallpaperContextMenu(runtime: WallpaperRuntime): AppContextMenu;
 
+  export interface DesktopIconPos {
+      x: number;
+      y: number;
+  }
+
+  export type DesktopIcons = Record<string, DesktopIconPos>;
+
   export class WallpaperRuntime extends AppProcess {
+      CONFIG_PATH: string;
       contents: ReadableStore<DirectoryReadReturn | undefined>;
       selected: ReadableStore<string>;
       shortcuts: ReadableStore<ShortcutStore>;
       iconsElement: ReadableStore<HTMLDivElement>;
       orphaned: ReadableStore<string[]>;
+      loading: ReadableStore<boolean>;
       directory: string;
+      Configuration: ReadableStore<DesktopIcons>;
       contextMenu: AppContextMenu;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, desktopDir?: string);
-      render({ desktopDir }: {
-          desktopDir: string;
-      }): Promise<void>;
+      start(): Promise<void>;
+      render(): Promise<void>;
       updateContents(): Promise<void>;
       findAndDeleteOrphans(contents: DirectoryReadReturn | undefined): void;
       findFreeDesktopIconPosition(identifier: string, wrapper?: HTMLDivElement): Promise<unknown> | {
@@ -2564,6 +2899,9 @@ declare global {
       };
       deleteItem(path: string): Promise<void>;
       uploadItems(): Promise<void>;
+      loadConfiguration(): Promise<DesktopIcons | undefined>;
+      writeConfiguration(data: DesktopIcons): Promise<DesktopIcons>;
+      migrateDesktopIcons(): Promise<boolean>;
   }
 
   export const WallpaperApp: App;
@@ -2578,7 +2916,8 @@ declare global {
       displayingDesync: boolean;
       preferencesSub?: Unsubscriber;
       bufferSub?: Unsubscriber;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, tab?: string);
+      start(): Promise<false | undefined>;
       apply(close?: boolean): void;
   }
 
@@ -2625,10 +2964,17 @@ declare global {
       gooseBumps?: boolean;
   }
 
+  export type ExpandedTerminal = Terminal & {
+      process?: TerminalWindowRuntime;
+  };
+
   export class TerminalProcess extends Process {
       static keyword: string;
       static description: string;
       static hidden: boolean;
+      protected term?: ArcTerminal;
+      protected flags?: Arguments;
+      protected argv?: string[];
       private exitCode;
       constructor(handler: ProcessHandler, pid: number, parentPid: number);
       protected main(term: ArcTerminal, flags: Arguments, argv: string[]): Promise<number>;
@@ -3192,6 +3538,65 @@ declare global {
       protected main(term: ArcTerminal): Promise<number>;
   }
 
+  export interface ProjectMetadata {
+      metadata: ArcPackage;
+      devPort?: number;
+      repository?: string;
+      outFile: string;
+      payloadDir: string;
+      buildHash?: string;
+      noHotRelaunch?: boolean;
+  }
+
+  export type DevEnvActivationResult = "success" | "ping_failed" | "port_mismatch" | "build_mismatch" | "already_connected" | "websock_failed" | "drivemnt_failed";
+
+  export const DevEnvActivationResultCaptions: Record<DevEnvActivationResult, string>;
+
+  export class DevDrive extends FilesystemDrive {
+      FIXED: boolean;
+      REMOVABLE: boolean;
+      IDENTIFIES_AS: string;
+      FILESYSTEM_SHORT: string;
+      FILESYSTEM_LONG: string;
+      private axios;
+      private url;
+      label: string;
+      protected CAPABILITIES: Record<DriveCapabilities, boolean>;
+      constructor(uuid: string, letter: string, axios: AxiosInstance, url: string);
+      readDir(path: string): Promise<DirectoryReadReturn | undefined>;
+      createDirectory(path: string): Promise<boolean>;
+      readFile(path: string, onProgress?: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
+      writeFile(path: string, data: Blob, onProgress?: FilesystemProgressCallback): Promise<boolean>;
+      tree(path?: string): Promise<RecursiveDirectoryReadReturn | undefined>;
+      copyItem(source: string, destination: string): Promise<boolean>;
+      moveItem(source: string, destination: string): Promise<boolean>;
+      deleteItem(path: string): Promise<boolean>;
+      quota(): Promise<UserQuota>;
+      direct(path: string): Promise<string | undefined>;
+  }
+
+  export class DevelopmentEnvironment extends BaseService {
+      connected: boolean;
+      private port?;
+      private url?;
+      private client;
+      private axios?;
+      meta?: ProjectMetadata;
+      private daemon;
+      private pids;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
+      connect(port: number): Promise<DevEnvActivationResult>;
+      disconnect(): Promise<undefined>;
+      getProjectMeta(): Promise<ProjectMetadata | undefined>;
+      mountDevDrive(): Promise<boolean | undefined>;
+      restartTpa(): Promise<undefined>;
+      killTpa(): Promise<undefined>;
+      stop(): Promise<void>;
+      refreshCSS(filename: string): Promise<void>;
+  }
+
+  export const devEnvironmentService: Service;
+
   export class DevenvCommand extends TerminalProcess {
       static keyword: string;
       static description: string;
@@ -3322,6 +3727,23 @@ declare global {
       protected main(term: ArcTerminal, _: Arguments, argv: string[]): Promise<number>;
   }
 
+  export class PkgCommand extends TerminalProcess {
+      static keyword: string;
+      static description: string;
+      private distrib?;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number);
+      protected main(term: ArcTerminal, _: Arguments, argv: string[]): Promise<number>;
+      installPackage(name: string): Promise<number>;
+      removePackage(name: string): Promise<number>;
+      searchPackages(query: string): Promise<number>;
+      updateAll(): Promise<number>;
+      update(name: string): Promise<number>;
+      reinstall(name: string): Promise<number>;
+      help(): Promise<number>;
+      listAll(): Promise<number>;
+      elevate(): Promise<boolean>;
+  }
+
   export class QuotaCommand extends TerminalProcess {
       static keyword: string;
       static description: string;
@@ -3439,6 +3861,16 @@ declare global {
 
   export const HIDDEN = "\u001B[8m";
 
+  export const CURUP = "\u001B[1A";
+
+  export const CURDOWN = "\u001B[1B";
+
+  export const CURLEFT = "\u001B[1C";
+
+  export const CURRIGHT = "\u001B[1D";
+
+  export const CLRROW = "\u001B[2K";
+
   export const DefaultArcTermConfiguration: ArcTermConfiguration;
 
   export function getArcTermStore(term: ArcTerminal): VariableStore;
@@ -3456,6 +3888,7 @@ declare global {
   }
 
   export class ArcTerminal extends Process {
+      readonly CONFIG_PATH: string;
       path: string;
       drive: FilesystemDrive | undefined;
       term: Terminal;
@@ -3468,7 +3901,7 @@ declare global {
       config: ArcTermConfiguration;
       window: TerminalWindowRuntime | undefined;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, term: Terminal, path?: string);
-      start(): Promise<void>;
+      start(): Promise<false | void>;
       readline(): Promise<void>;
       processLine(text: string | undefined): Promise<void>;
       join(path?: string): string;
@@ -3494,6 +3927,7 @@ declare global {
       writeConfig(): Promise<void>;
       reload(): Promise<void>;
       tryGetTermWindow(): void;
+      migrateConfigurationPath(): Promise<void>;
   }
 
   export class ArcTermRuntime extends Process {
@@ -3602,7 +4036,40 @@ declare global {
 
   export const CalculatorApp: App;
 
-  export const FileManagerApp: App;
+  export function CodAccelerators(runtime: CodRuntime): AppKeyCombinations;
+
+  export function FileMenu(runtime: CodRuntime): ContextMenuItem;
+
+  export function LanguageMenu(runtime: CodRuntime): ContextMenuItem;
+
+  export function CodAltMenu(runtime: CodRuntime): ContextMenuItem[];
+
+  export type CodLang = "css" | "ini" | "javascript" | "json" | "markdown" | "xml" | "yaml" | "plaintext";
+
+  export const CodTranslations: Record<string, CodLang>;
+
+  export class CodRuntime extends AppProcess {
+      language: ReadableStore<CodLang>;
+      buffer: ReadableStore<string>;
+      openedFile: ReadableStore<string>;
+      filename: ReadableStore<string>;
+      mimetype: ReadableStore<string>;
+      directoryName: ReadableStore<string>;
+      original: ReadableStore<string>;
+      mimeIcon: ReadableStore<string>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, path?: string);
+      acceleratorStore: AppKeyCombinations;
+      render({ path }: {
+          path: string;
+      }): Promise<void>;
+      readFile(path: string): Promise<void>;
+      onClose(): Promise<boolean>;
+      saveChanges(force?: boolean): Promise<void>;
+      saveAs(): Promise<void>;
+      openFile(): Promise<void>;
+  }
+
+  export const CodApp: App;
 
   export class EditRowRuntime extends AppProcess {
       view: ReadableStore<Uint8Array<ArrayBufferLike>>;
@@ -3803,63 +4270,6 @@ declare global {
 
   export const MediaPlayerApp: App;
 
-  export interface MessagingPage {
-      name: string;
-      icon: string;
-      supplier: (process: MessagingAppRuntime) => Promise<PartialMessage[]> | PartialMessage[];
-  }
-
-  export const messagingPages: Record<string, MessagingPage>;
-
-  export class MessagingAppRuntime extends AppProcess {
-      service: MessagingInterface;
-      page: ReadableStore<MessagingPage | undefined>;
-      pageId: ReadableStore<string | undefined>;
-      buffer: ReadableStore<PartialMessage[]>;
-      correlated: ReadableStore<PartialMessage[][]>;
-      loading: ReadableStore<boolean>;
-      refreshing: ReadableStore<boolean>;
-      errored: ReadableStore<boolean>;
-      messageNotFound: ReadableStore<boolean>;
-      message: ReadableStore<ExpandedMessage | undefined>;
-      userInfoCache: Record<string, PublicUserInfo>;
-      searchQuery: ReadableStore<string>;
-      searchResults: ReadableStore<string[]>;
-      messageWindow: boolean;
-      messageFromFile: boolean;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, pageOrMessagePath?: string, messageId?: string);
-      render({ page }: {
-          page: string;
-      }): Promise<void>;
-      getInbox(): Promise<PartialMessage[]>;
-      getSent(): Promise<PartialMessage[]>;
-      getArchived(): Promise<PartialMessage[]>;
-      getArchiveState(): string[];
-      setArchiveState(state: string[]): void;
-      isArchived(id: string): boolean;
-      addToArchive(id: string): void;
-      removeFromArchive(id: string): void;
-      switchPage(id: string): Promise<void>;
-      refresh(): Promise<void>;
-      correlateMessages(messages: PartialMessage[]): PartialMessage[][];
-      refreshFailed(): void;
-      readMessage(messageId: string, force?: boolean): Promise<void>;
-      userInfo(userId: string): Promise<PublicUserInfo | undefined>;
-      readAttachment(attachment: MessageAttachment, messageId: string, prog: FileProgressMutator): Promise<ArrayBuffer | undefined>;
-      openAttachment(attachment: MessageAttachment, messageId: string): Promise<void>;
-      Search(query: string): void;
-      popoutMessage(messageId: string): void;
-      saveMessage(): Promise<void>;
-      readMessageFromFile(path: string): Promise<void>;
-      compose(): void;
-      replyTo(message: ExpandedMessage): void;
-      forward(message: ExpandedMessage): Promise<void>;
-      toggleArchived(message: ExpandedMessage): void;
-      deleteMessage(id: string): Promise<void>;
-  }
-
-  export const MessagingApp: App;
-
   export class PdfViewerRuntime extends AppProcess {
       openedFile: ReadableStore<string>;
       documentUrl: ReadableStore<string>;
@@ -3872,18 +4282,6 @@ declare global {
   }
 
   export const PdfViewerApp: App;
-
-  export const ProcessKillResultCaptions: Record<ProcessKillResult, string>;
-
-  export class ProcessManagerRuntime extends AppProcess {
-      selected: ReadableStore<number>;
-      running: ReadableStore<number>;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
-      kill(proc: Process): Promise<void>;
-      killError(name: string, result: ProcessKillResult): void;
-  }
-
-  export const ProcessesApp: App;
 
   export interface Box {
       modifier: number;
@@ -3917,15 +4315,6 @@ declare global {
   }
 
   export const QlorbApp: App;
-
-  export const SystemSettings: App;
-
-  export class TestAppRuntime extends AppProcess {
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
-      render(): Promise<void>;
-  }
-
-  export const TestApp: App;
 
   export function WriterAccelerators(runtime: WriterRuntime): AppKeyCombinations;
 
@@ -3990,25 +4379,36 @@ declare global {
 
   export function invertColor(hex: string): string;
 
-  export class ServerDrive extends FilesystemDrive {
-      private token;
-      label: string;
+  export function bestForeground(bgColor: string): "white" | "black";
+
+  export function getReadableVibrantColor(url: string): Promise<string>;
+
+  export class MemoryFilesystemDrive extends FilesystemDrive {
+      private readonly data;
       FIXED: boolean;
       IDENTIFIES_AS: string;
-      FILESYSTEM_SHORT: string;
       FILESYSTEM_LONG: string;
-      constructor(kernel: WaveKernel, uuid: string, letter: string, token: string);
-      readDir(path?: string): Promise<DirectoryReadReturn | undefined>;
+      FILESYSTEM_SHORT: string;
+      HIDDEN: boolean;
+      label: string;
+      protected CAPABILITIES: Record<DriveCapabilities, boolean>;
+      constructor(kernel: any, uuid: string, letter?: string);
+      private getPathParts;
+      private getEntry;
+      private setEntry;
+      private deleteEntry;
+      readDir(path: string): Promise<DirectoryReadReturn | undefined>;
       createDirectory(path: string): Promise<boolean>;
-      readFile(path: string, onProgress: FilesystemProgressCallback): Promise<ArrayBuffer | undefined>;
-      writeFile(path: string, blob: Blob, onProgress: FilesystemProgressCallback): Promise<boolean>;
-      tree(path?: string): Promise<RecursiveDirectoryReadReturn | undefined>;
+      readFile(path: string): Promise<ArrayBuffer | undefined>;
+      writeFile(path: string, data: Blob): Promise<boolean>;
+      tree(path: string): Promise<RecursiveDirectoryReadReturn | undefined>;
       copyItem(source: string, destination: string): Promise<boolean>;
       moveItem(source: string, destination: string): Promise<boolean>;
       deleteItem(path: string): Promise<boolean>;
-      quota(): Promise<UserQuota>;
       direct(path: string): Promise<string | undefined>;
-      bulk<T = any>(path: string, extension: string): Promise<Record<string, T>>;
+      quota(): Promise<UserQuota>;
+      takeSnapshot(): Promise<Record<string, any>>;
+      restoreSnapshot(snapshot: Record<string, any>): void;
   }
 
   export class ZIPDrive extends FilesystemDrive {
@@ -4016,10 +4416,12 @@ declare global {
       private _buffer;
       private _path;
       REMOVABLE: boolean;
+      READONLY: boolean;
       IDENTIFIES_AS: string;
       FILESYSTEM_SHORT: string;
       FILESYSTEM_LONG: string;
-      constructor(kernel: WaveKernel, uuid: string, letter: string, path: string);
+      protected CAPABILITIES: Record<DriveCapabilities, boolean>;
+      constructor(uuid: string, letter: string, path: string);
       _spinUp(onProgress?: FilesystemProgressCallback): Promise<boolean>;
       _spinDown(onProgress?: FilesystemProgressCallback): Promise<boolean>;
       readDir(path: string): Promise<DirectoryReadReturn | undefined>;
@@ -4032,6 +4434,55 @@ declare global {
       moveItem(source: string, destination: string): Promise<boolean>;
       _sync(progress?: FilesystemProgressCallback): Promise<void>;
   }
+
+  export type MaybePromise<T> = T | Promise<T>;
+
+  export interface ArcProtocol {
+      subCommand: string;
+      command: string;
+      payload: Record<string, any>;
+      path: string;
+  }
+
+  export interface SpawnAppProtocol extends ArcProtocol {
+      subCommand: "";
+      command: "spawn_app";
+      payload: {
+          id: string;
+          args: any[];
+      };
+      path: "/";
+  }
+
+  export interface ProtocolHandler {
+      name: string;
+      className?: string;
+      info: (payload: Record<string, any>, daemon: UserDaemon) => {
+          icon: string;
+          caption: string;
+          title?: string;
+      } | undefined;
+      action: (payload: Record<string, any>, daemon: UserDaemon, proto: ArcProtocol) => MaybePromise<boolean>;
+  }
+
+  export const SpawnAppHandler: ProtocolHandler;
+
+  export class ProtocolServiceProcess extends BaseService {
+      lockObserver: boolean;
+      observer?: MutationObserver;
+      store: Record<string, ProtocolHandler>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
+      start(): Promise<void>;
+      parseProtoParam(): void;
+      processMutations(mutations: MutationRecord[]): void;
+      parseAnchor(anchor: HTMLAnchorElement): void;
+      parseUrl(str: string): ArcProtocol | undefined;
+      executeUrl(url: string): Promise<boolean | undefined>;
+      registerHandler(command: string, handler: ProtocolHandler): boolean;
+      unregisterHandler(command: string): boolean;
+  }
+
+  export const protoService: Service;
 
   export const Wallpapers: {
       [key: string]: Wallpaper;
@@ -4077,17 +4528,37 @@ declare global {
       suggested?: boolean;
   }
 
+  export const AdminProtocolHandlers: Record<string, ProtocolHandler>;
+
+  export class FileAssocService extends BaseService {
+      private CONFIG_PATH;
+      private Configuration;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
+      start(): Promise<void>;
+      private loadConfiguration;
+      private writeConfiguration;
+      updateConfiguration(callback: (config: FileAssociationConfig) => FileAssociationConfig | Promise<FileAssociationConfig>): Promise<void>;
+      defaultFileAssociations(): FileAssociationConfig;
+      getFileAssociation(path: string): ExpandedFileAssociationInfo | undefined;
+      getConfiguration(): FileAssociationConfig;
+  }
+
+  export const fileAssocService: Service;
+
   export const DefaultUserPreferences: UserPreferences;
 
   export const DefaultUserInfo: UserInfo;
 
-  export function SupplementaryThirdPartyPropFunctions(daemon: UserDaemon, fs: Filesystem, app: App, props: any, wrap: (c: string) => string, args: any[], metaPath: string): {
-      load: (path: string) => Promise<any>;
-      runApp: (process: typeof ThirdPartyAppProcess, metadataPath: string, parentPid?: number, ...args: any[]) => Promise<ThirdPartyAppProcess | undefined>;
-      runAppDirect: (process: typeof ThirdPartyAppProcess, metadataPath: string, parentPid?: number, ...args: any[]) => Promise<ThirdPartyAppProcess | undefined>;
-      loadHtml: (path: string) => Promise<string>;
-      loadDirect: (path: string) => Promise<void>;
-  };
+  export function contextProps(node: HTMLElement, args: any[]): void;
+
+  export class CustomTitlebar {
+      #private;
+      constructor(process: AppProcess, className?: string);
+      render(target: HTMLElement): void;
+      dispose(): void;
+      getTarget(): HTMLElement | undefined;
+      getTitlebar(): HTMLDivElement | undefined;
+  }
 
   export type AxiosHeaderValue = AxiosHeaders | string | string[] | number | boolean | null;
 
@@ -4673,7 +5144,6 @@ declare global {
   }
 
   export interface ThirdPartyPropMap {
-      kernel: WaveKernel;
       daemon: UserDaemon;
       handler: ProcessHandler;
       fs: Filesystem;
@@ -4721,16 +5191,13 @@ declare global {
       [key: string]: any;
   }
 
-  export function contextProps(node: HTMLElement, args: any[]): void;
-
-  export class CustomTitlebar {
-      #private;
-      constructor(process: AppProcess, className?: string);
-      render(target: HTMLElement): void;
-      dispose(): void;
-      getTarget(): HTMLElement | undefined;
-      getTitlebar(): HTMLDivElement | undefined;
-  }
+  export function SupplementaryThirdPartyPropFunctions(daemon: UserDaemon, fs: Filesystem, app: App, props: any, wrap: (c: string) => string, args: any[], metaPath: string): {
+      load: (path: string) => Promise<any>;
+      runApp: (process: typeof ThirdPartyAppProcess, metadataPath: string, parentPid?: number, ...args: any[]) => Promise<ThirdPartyAppProcess | undefined>;
+      runAppDirect: (process: typeof ThirdPartyAppProcess, metadataPath: string, parentPid?: number, ...args: any[]) => Promise<ThirdPartyAppProcess | undefined>;
+      loadHtml: (path: string) => Promise<string>;
+      loadDirect: (path: string) => Promise<void>;
+  };
 
   export function ThirdPartyProps(daemon: UserDaemon, args: any[], app: App, wrap: (c: string) => string, metaPath: string, workingDirectory?: string): ThirdPartyPropMap;
 
@@ -4746,6 +5213,7 @@ declare global {
       Wallpaper: ReadableStore<Wallpaper>;
       lastWallpaper: ReadableStore<string>;
       _elevating: boolean;
+      _blockLeaveInvocations: boolean;
       private elevations;
       private preferencesUnsubscribe;
       private wallpaperGetters;
@@ -4753,7 +5221,6 @@ declare global {
       private virtualDesktops;
       private virtualDesktop;
       private virtualDesktopIndex;
-      private mimeIcons;
       private virtualdesktopChangingTimeout;
       private firstSyncDone;
       safeMode: boolean;
@@ -4764,13 +5231,19 @@ declare global {
       syncLock: boolean;
       autoLoadComplete: boolean;
       globalDispatch?: GlobalDispatch;
+      private TempFsSnapshot;
+      TempFs?: MemoryFilesystemDrive;
+      private registeredAnchors;
+      assoc?: FileAssocService;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, token: string, username: string, userInfo?: UserInfo);
-      startApplicationStorage(): Promise<void>;
+      start(): Promise<false | undefined>;
+      appStorage(): ApplicationStorage | undefined;
+      initAppStorage(storage: ApplicationStorage): void;
       getUserInfo(): Promise<UserInfo | undefined>;
       startPreferencesSync(): Promise<void>;
       updateWallpaper(v: UserPreferences): Promise<void>;
       getAppRendererStyle(accent: string): string;
-      setAppRendererClasses(v: UserPreferences): void;
+      setAppRendererClasses(v: UserPreferences): Promise<void>;
       setUserStyleLoader(style: CustomStylePreferences): void;
       commitPreferences(preferences: UserPreferences): Promise<boolean | undefined>;
       startFilesystemSupplier(): Promise<void>;
@@ -4788,6 +5261,7 @@ declare global {
       checkCurrentThemeIdValidity(data: UserPreferences): UserPreferences;
       deleteUserTheme(id: string): void;
       uploadWallpaper(pid?: number): Promise<Wallpaper | undefined>;
+      changeProfilePicture(newValue: string | number): void;
       uploadProfilePicture(): Promise<string | undefined>;
       getWallpaper(id: string, override?: string): Promise<Wallpaper>;
       deleteLocalWallpaper(id: string): Promise<boolean>;
@@ -4800,7 +5274,7 @@ declare global {
       mountZip(path: string, letter?: string, fromSystem?: boolean): Promise<false | FilesystemDrive | undefined>;
       batteryInfo(): Promise<BatteryType | undefined>;
       startSystemStatusRefresh(): Promise<void>;
-      getUserApps(): Promise<AppStorage>;
+      getUserApps(): AppStorage;
       spawnApp<T>(id: string, parentPid?: number, ...args: any[]): Promise<T | undefined>;
       spawnOverlay<T>(id: string, parentPid?: number, ...args: any[]): Promise<T | undefined>;
       _spawnApp<T>(id: string, renderTarget?: HTMLDivElement | undefined, parentPid?: number, ...args: any[]): Promise<T | undefined>;
@@ -4837,9 +5311,6 @@ declare global {
       copyMultiple(sources: string[], destination: string, pid: number): Promise<void>;
       findHandlerToOpenFile(path: string): Promise<FileOpenerResult[]>;
       getAllFileHandlers(): Promise<FileOpenerResult[]>;
-      getMimeIconByFilename(filename: string): string | undefined;
-      getMimeIconByExtension(extension: string): string | undefined;
-      loadMimeIcon(extension: string, icon: string): void;
       LoadSaveDialog(data: Omit<LoadSaveDialogData, "returnId">): Promise<string[] | [
           undefined
       ]>;
@@ -4852,13 +5323,11 @@ declare global {
       checkReducedMotion(): void;
       IconPicker(data: Omit<IconPickerData, "returnId">): Promise<string | undefined>;
       installApp(data: InstalledApp): Promise<void>;
-      deleteApp(id: string, deleteFiles?: boolean): Promise<false | undefined>;
+      deleteApp(id: string, deleteFiles?: boolean): Promise<boolean>;
       installAppFromPath(path: string): Promise<"failed to read file" | "failed to convert to JSON" | "missing properties" | undefined>;
       activateAdminBootstrapper(): Promise<void>;
-      activateMessagingService(): void;
       startShareManager(): Promise<void>;
       startServiceHost(): Promise<void>;
-      activateBugHuntUserSpaceProcess(): Promise<void>;
       GlobalLoadIndicator(caption?: string, pid?: number): Promise<{
           caption: ReadableStore<string>;
           stop: () => Promise<void>;
@@ -4871,123 +5340,443 @@ declare global {
       iHaveFeedback(process: AppProcess): void;
       activateGlobalDispatch(): Promise<void>;
       changeShell(id: string): Promise<false | undefined>;
-      Confirm(title: string, message: string, no: string, yes: string, image?: string): Promise<unknown>;
+      Confirm(title: string, message: string, no: string, yes: string, image?: string, pid?: number): Promise<unknown>;
       enableThirdParty(): Promise<void>;
       disableThirdParty(): Promise<void>;
       pinApp(appId: string): Promise<void>;
       unpinApp(appId: string): void;
+      startAnchorRedirectionIntercept(): void;
+      checkForUpdates(): Promise<void>;
+      checkForMissedMessages(): Promise<void>;
+      deleteAccount(): Promise<void>;
+      waitForLeaveInvocationAllow(): Promise<void>;
+      migrateFilesystemLayout(): Promise<void>;
+      updateAppShortcutsDir(): Promise<void>;
+      TerminalWindow(pid?: number): Promise<ExpandedTerminal | undefined>;
+      isRegisteredVersionOutdated(): Promise<boolean>;
+      updateRegisteredVersion(): Promise<void>;
+      checkForNewVersion(): Promise<void>;
+      determineCategorizedDiskUsage(): Promise<CategorizedDiskUsage>;
   }
 
-  export const installArcPkg: (d: UserDaemon) => FileHandler;
+  export interface Service {
+      name: string;
+      description: string;
+      process: typeof BaseService;
+      startCondition?: (daemon: UserDaemon) => MaybePromise<boolean>;
+      pid?: number;
+      id?: string;
+      initialState?: InitialServiceState;
+      loadedAt?: number;
+      changedAt?: number;
+  }
 
-  export const installTpaFile: (d: UserDaemon) => FileHandler;
+  export type ServiceStore = Map<string, Service>;
 
-  export const runTpaFile: (d: UserDaemon) => FileHandler;
+  export type ReadableServiceStore = ReadableStore<ServiceStore>;
 
-  export const runTpaBundle: (d: UserDaemon) => FileHandler;
+  export type InitialServiceState = "stopped" | "started";
 
-  export const BuiltinThemes: ThemeStore;
+  export type ServiceChangeResult = "err_noExist" | "err_alreadyRunning" | "err_notRunning" | "err_startCondition" | "err_spawnFailed" | "err_noManager" | "err_elevation" | "err_managerPaused" | "success";
 
-  export const VisualStyles: Record<string, string>;
+  export class BugHuntUserSpaceProcess extends BaseService {
+      INVALIDATION_THRESHOLD: number;
+      privateCache: BugReport[];
+      publicCache: BugReport[];
+      cachedPrivateResponseCount: number;
+      cachedPublicResponseCount: number;
+      token: string | undefined;
+      module: BugHunt;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
+      afterActivate(): Promise<void>;
+      sendBugReport(options: ReportOptions): Promise<boolean>;
+      getPrivateReports(forceInvalidate?: boolean): Promise<BugReport[]>;
+      getPublicReports(forceInvalidate?: boolean): Promise<BugReport[]>;
+      refreshPrivateCache(): Promise<void>;
+      refreshPublicCache(): Promise<void>;
+      refreshAllCaches(): Promise<void>;
+  }
 
-  export const ActivityIconTranslations: {
-      unknown: string;
-      login: string;
-      logout: string;
-  };
+  export const bhuspService: Service;
 
-  export const ActivityCaptionTranslations: {
-      unknown: string;
-      login: string;
-      logout: string;
-  };
+  export interface TrashIndexNode {
+      name: string;
+      icon: string;
+      originalPath: string;
+      deletedPath: string;
+      timestamp: number;
+  }
 
-  export const TimeFrames: Record<string, string>;
-
-  export const DefaultMimeIcons: Record<string, string[]>;
-
-  export function DefaultFileHandlers(daemon: UserDaemon): Record<string, FileHandler>;
-
-  export const DefaultAppData: App;
-
-  export const DefaultThirdPartyAppData: {
-      metadata: {
-          name: string;
-          author: string;
-          version: string;
-          icon: string;
-      };
-      size: {
-          w: number;
-          h: number;
-      };
-      minSize: {
-          w: number;
-          h: number;
-      };
-      maxSize: {
-          w: number;
-          h: number;
-      };
-      position: {
-          centered: boolean;
-      };
-      state: {
-          maximized: boolean;
-          minimized: boolean;
-          resizable: boolean;
-          headless: boolean;
-          fullscreen: boolean;
-      };
-      controls: {
-          minimize: boolean;
-          maximize: boolean;
-          close: boolean;
-      };
-      entrypoint: string;
-      glass: boolean;
-      id: string;
-  };
-
-  export const AppGroups: Record<string, string>;
-
-  export const UserPaths: {
-      Root: string;
-      Home: string;
-      Applications: string;
-      Documents: string;
-      Pictures: string;
-      Downloads: string;
-      Wallpapers: string;
-      Desktop: string;
-      Music: string;
-  };
-
-  export const UserPathCaptions: Record<string, string>;
-
-  export const UserPathIcons: Record<string, string>;
-
-  export const UserFonts: string[];
-
-  export function isPopulatable(app: App): boolean;
-
-  export function RegisteredProcess(process: RegisteredProcess): App;
-
-  export class ArcFindRuntime extends AppProcess {
-      private fileSystemIndex;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData);
+  export class TrashCanService extends BaseService {
+      INDEX_PATH: string;
+      IndexBuffer: ReadableStore<Record<string, TrashIndexNode>>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
       start(): Promise<void>;
-      Search(query: string): Promise<{
-          id: string;
-          item: SearchItem;
-          refIndex: number;
-          score?: number;
-          matches?: ReadonlyArray<FuseResultMatch>;
-      }[]>;
-      getFilesystemSearchSupplier(preferences: UserPreferences): Promise<SearchItem[]>;
-      getAppSearchSupplier(preferences: UserPreferences): Promise<SearchItem[]>;
-      getFlatTree(): Promise<PathedFileEntry[]>;
+      readIndex(): Promise<Record<string, TrashIndexNode>>;
+      writeIndex(index: Record<string, TrashIndexNode>): Promise<Record<string, TrashIndexNode>>;
+      moveToTrash(path: string, dispatch?: boolean): Promise<TrashIndexNode | undefined>;
+      restoreTrashItem(uuid: string): Promise<boolean>;
+      getIndex(): Record<string, TrashIndexNode>;
+      permanentlyDelete(uuid: string): Promise<boolean>;
+      emptyBin(): Promise<void>;
   }
+
+  export const trashService: Service;
+
+  export class ServiceHost extends Process {
+      Services: ReadableServiceStore;
+      _holdRestart: boolean;
+      private _storeLoaded;
+      daemon: UserDaemon;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number);
+      readonly STORE: Map<string, {
+          name: string;
+          description: string;
+          process: typeof BaseService;
+          startCondition?: (daemon: UserDaemon) => MaybePromise<boolean>;
+          pid?: number;
+          id?: string;
+          initialState?: InitialServiceState;
+          loadedAt?: number;
+          changedAt?: number;
+      }>;
+      loadStore(store: ServiceStore): boolean;
+      getServiceInfo(id: string): Service | undefined;
+      startService(id: string): Promise<"success" | "err_noExist" | "err_alreadyRunning" | "err_startCondition" | "err_spawnFailed">;
+      stopService(id: string): Promise<ServiceChangeResult>;
+      restartService(id: string): Promise<ServiceChangeResult>;
+      initialRun(): Promise<void>;
+      init(): Promise<void>;
+      verifyServicesProcesses(): Promise<void>;
+      getService<T extends BaseService = BaseService>(id: string): T | undefined;
+      stop(): Promise<void>;
+  }
+
+  export class ApplicationStorage extends BaseService {
+      private origins;
+      private injectedStore;
+      buffer: ReadableStore<AppStorage>;
+      appIconCache: Record<string, string>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, name: string, host: ServiceHost);
+      start(): Promise<void>;
+      loadOrigin(id: string, store: AppStoreCb): boolean;
+      unloadOrigin(id: string): boolean;
+      loadApp(app: App): false | App;
+      injected(): {
+          metadata: AppMetadata;
+          size: Size;
+          minSize: Size;
+          maxSize: Size;
+          position: MaybeCenteredPosition;
+          state: AppState;
+          controls: WindowControls;
+          assets: AppAssets;
+          autoRun?: boolean;
+          core?: boolean;
+          hidden?: boolean;
+          overlay?: boolean;
+          glass?: boolean;
+          thirdParty?: false;
+          id: string;
+          originId?: string;
+          entrypoint?: string;
+          workingDirectory?: string;
+          opens?: {
+              extensions?: string[];
+              mimeTypes?: string[];
+          };
+          elevated?: boolean;
+          acceleratorDescriptions?: Record<string, string>;
+          fileSignatures?: Record<string, string>;
+          process?: ThirdPartyAppProcess;
+          tpaRevision?: number;
+          noSafeMode?: boolean;
+          vital?: boolean;
+      }[];
+      refresh(): Promise<void>;
+      get(): Promise<any[]>;
+      getAppSynchronous(id: string): App | undefined;
+      getAppById(id: string, fromBuffer?: boolean): Promise<App | undefined>;
+  }
+
+  export const appStoreService: Service;
+
+  export class OopsNotifierRuntime extends AppProcess {
+      data: App;
+      exception: Error | PromiseRejectionEvent;
+      process?: AppProcess;
+      installed: boolean;
+      stackFrames: ParsedStackFrame[];
+      URL_REGEX: RegExp;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, data: App, exception: Error | PromiseRejectionEvent, process?: AppProcess);
+      start(): Promise<void>;
+      details(): Promise<void>;
+      reopen(): Promise<void>;
+      parseStack(): void;
+  }
+
+  export const OopsNotifierApp: App;
+
+  export class AppLoadError extends Error {
+      name: string;
+      constructor(message: string);
+  }
+
+  export class AppRuntimeError extends Error {
+      name: string;
+      constructor(message: string);
+  }
+
+  export class AppRendererError extends Error {
+      name: string;
+      constructor(message: string);
+  }
+
+  export class AppRenderer extends Process {
+      currentState: number[];
+      target: HTMLDivElement;
+      maxZIndex: number;
+      focusedPid: ReadableStore<number>;
+      appStore: ReadableStore<Map<string, AppProcessData>>;
+      defaultApps: AppStorage;
+      lastInteract?: AppProcess;
+      _criticalProcess: boolean;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, target: string);
+      disposedCheck(): void;
+      render(process: AppProcess, renderTarget: HTMLDivElement | undefined): Promise<void>;
+      _windowClasses(proc: AppProcess, window: HTMLDivElement, data: App): void;
+      _windowEvents(proc: AppProcess, window: HTMLDivElement, titlebar: HTMLDivElement | undefined, data: App): void;
+      focusPid(pid: number): void;
+      _renderTitlebar(process: AppProcess): HTMLDivElement | undefined;
+      _renderAltMenu(process: AppProcess): HTMLDivElement;
+      _resizeGrabbers(process: AppProcess, window: HTMLDivElement): undefined;
+      _resizer(window: HTMLDivElement, resizer: WindowResizer): HTMLDivElement;
+      remove(pid: number): Promise<void>;
+      toggleMaximize(pid: number): void;
+      updateDraggableDisabledState(pid: number, window: HTMLDivElement): void;
+      unMinimize(pid: number): void;
+      unsnapWindow(pid: number, dispatch?: boolean): void;
+      snapWindow(pid: number, variant: string): void;
+      toggleMinimize(pid: number): void;
+      toggleFullscreen(pid: number): void;
+      getAppInstances(id: string, originPid?: number): AppProcess[];
+      notifyCrash(data: App, e: Error, process?: AppProcess): Promise<void>;
+      protected start(): Promise<void>;
+  }
+
+  export class ProcessHandler extends KernelModule {
+      BUSY: boolean;
+      private lastPid;
+      store: ReadableStore<Map<number, Process>>;
+      rendererPid: number;
+      renderer: AppRenderer | undefined;
+      env: Environment;
+      dispatch: SystemDispatch;
+      constructor(kernel: WaveKernel, id: string);
+      _init(): Promise<void>;
+      startRenderer(initPid: number): Promise<void>;
+      private makeBusy;
+      private makeNotBusy;
+      spawn<T = Process>(process: typeof Process, renderTarget?: HTMLDivElement | undefined, parentPid?: number | undefined, ...args: any[]): Promise<T | undefined>;
+      kill(pid: number, force?: boolean): Promise<ProcessKillResult>;
+      _killSubProceses(pid: number, force?: boolean): Promise<void>;
+      getSubProcesses(parentPid: number): Map<number, Process>;
+      getProcess<T = Process>(pid: number, disposedToo?: boolean): T | undefined;
+      getPid(): number;
+      isPid(pid: number): boolean;
+      ConnectDispatch(pid: number): ProcessDispatch | undefined;
+      waitForAvailable(): Promise<void>;
+  }
+
+  export class ThirdPartyAppProcess extends AppProcess {
+      static readonly TPA_REV = 1;
+      workingDirectory: string;
+      mutationLock: boolean;
+      urlCache: Record<string, string>;
+      elements: Record<string, Element>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, workingDirectory: string, ...args: any[]);
+      __render__(body: HTMLDivElement): Promise<void>;
+  }
+
+  export interface App {
+      metadata: AppMetadata;
+      size: Size;
+      minSize: Size;
+      maxSize: Size;
+      position: MaybeCenteredPosition;
+      state: AppState;
+      controls: WindowControls;
+      assets: AppAssets;
+      autoRun?: boolean;
+      core?: boolean;
+      hidden?: boolean;
+      overlay?: boolean;
+      glass?: boolean;
+      thirdParty?: false;
+      id: string;
+      originId?: string;
+      entrypoint?: string;
+      workingDirectory?: string;
+      opens?: {
+          extensions?: string[];
+          mimeTypes?: string[];
+      };
+      elevated?: boolean;
+      acceleratorDescriptions?: Record<string, string>;
+      fileSignatures?: Record<string, string>;
+      process?: ThirdPartyAppProcess;
+      tpaRevision?: number;
+      noSafeMode?: boolean;
+      vital?: boolean;
+  }
+
+  export type RegisteredProcess = {
+      metadata: AppMetadata;
+      id: string;
+      assets: {
+          runtime: typeof Process;
+      };
+      vital?: boolean;
+  };
+
+  export interface InstalledApp extends App {
+      metadata: AppMetadata;
+      tpaPath: string;
+  }
+
+  export type ScriptedApp = Omit<App, "assets">;
+
+  export interface AppMetadata {
+      name: string;
+      version: string;
+      author: string;
+      icon: string;
+      appGroup?: string;
+  }
+
+  export interface AppState {
+      resizable: boolean;
+      minimized: boolean;
+      maximized: boolean;
+      fullscreen: boolean;
+      headless: boolean;
+  }
+
+  export interface WindowControls {
+      minimize: boolean;
+      maximize: boolean;
+      close: boolean;
+  }
+
+  export interface AppAssets {
+      runtime: typeof Process;
+      component?: typeof SvelteComponent;
+  }
+
+  export interface AppComponentProps<T = AppProcess> {
+      process: T;
+      pid: number;
+      handler: ProcessHandler;
+      app: App;
+      windowTitle: ReadableStore<string>;
+      windowIcon: ReadableStore<string>;
+  }
+
+  export type Size = {
+      w: number;
+      h: number;
+  };
+
+  export type Position = {
+      x: number;
+      y: number;
+  };
+
+  export type MaybeCenteredPosition = Partial<Position> & {
+      centered?: boolean;
+  };
+
+  export type AppProcessData = {
+      data: App;
+      id: string;
+      desktop?: string;
+  };
+
+  export type AppStorage = ((App | InstalledApp) & {
+      originId?: string;
+  })[];
+
+  export type AppStoreCb = () => MaybePromise<AppStorage>;
+
+  export interface ContextMenuItem {
+      sep?: boolean;
+      caption?: string;
+      icon?: string;
+      image?: string;
+      isActive?: ContextMenuCallback<boolean>;
+      action?: ContextMenuCallback;
+      subItems?: ContextMenuItem[];
+      disabled?: ContextMenuCallback<boolean>;
+      accelerator?: string;
+  }
+
+  export type ContextMenuCallback<T = any> = (...args: any[]) => MaybePromise<T>;
+
+  export type AppContextMenu = {
+      [key: string]: ContextMenuItem[];
+  };
+
+  export interface ContextMenuInstance {
+      x: number;
+      y: number;
+      items: ContextMenuItem[];
+      process?: AppProcess;
+      artificial?: boolean;
+      props?: any[];
+  }
+
+  export interface WindowResizer {
+      className: string;
+      cursor: string;
+      width: string;
+      height: string;
+      top?: string;
+      bottom?: string;
+      left?: string;
+      right?: string;
+  }
+
+  export interface MessageBoxData {
+      title: string;
+      message?: string;
+      content?: Component<any>;
+      buttons: MessageBoxButton[];
+      image?: string;
+      sound?: string;
+  }
+
+  export interface MessageBoxButton {
+      caption: string;
+      action: () => void;
+      suggested?: boolean;
+  }
+
+  export type ConfirmationData = Omit<MessageBoxData, "buttons">;
+
+  export class MessageBoxRuntime extends AppProcess {
+      data: MessageBoxData | undefined;
+      acted: ReadableStore<boolean>;
+      constructor(handler: ProcessHandler, pid: number, parentPid: number, app: AppProcessData, data: MessageBoxData);
+      start(): Promise<void>;
+      render(): Promise<void>;
+      onClose(): Promise<boolean>;
+  }
+
+  export const MessageBoxApp: App;
+
+  export function MessageBox(data: MessageBoxData, parentPid: number, overlay?: boolean): Promise<void>;
+
+  export function GetConfirmation(data: ConfirmationData, parentPid: number, overlay?: boolean): Promise<boolean>;
 
   export function ShellContextMenu(runtime: ShellRuntime): AppContextMenu;
 
@@ -5006,8 +5795,9 @@ declare global {
       searchResults: ReadableStore<FuseResult<SearchItem>[]>;
       searching: ReadableStore<boolean>;
       SelectionIndex: ReadableStore<number>;
-      FullscreenCount: ReadableStore<Record<string, number>>;
+      FullscreenCount: ReadableStore<Record<string, Set<number>>>;
       openedTrayPopup: ReadableStore<string>;
+      searchLoading: ReadableStore<boolean>;
       trayHost?: TrayHostRuntime;
       arcFind?: ArcFindRuntime;
       ready: ReadableStore<boolean>;
@@ -5024,21 +5814,7 @@ declare global {
       Trigger(result: SearchItem): Promise<void>;
       Submit(): void;
       exit(): Promise<void>;
-  }
-
-  export class AppLoadError extends Error {
-      name: string;
-      constructor(message: string);
-  }
-
-  export class AppRuntimeError extends Error {
-      name: string;
-      constructor(message: string);
-  }
-
-  export class AppRendererError extends Error {
-      name: string;
-      constructor(message: string);
+      stop(): Promise<boolean>;
   }
 
   export const bannedKeys: string[];
@@ -5088,79 +5864,6 @@ declare global {
       appStore(): ApplicationStorage;
   }
 
-  export class AppRenderer extends Process {
-      currentState: number[];
-      target: HTMLDivElement;
-      maxZIndex: number;
-      focusedPid: ReadableStore<number>;
-      appStore: ReadableStore<Map<string, AppProcessData>>;
-      defaultApps: AppStorage;
-      _criticalProcess: boolean;
-      constructor(handler: ProcessHandler, pid: number, parentPid: number, target: string);
-      disposedCheck(): void;
-      render(process: AppProcess, renderTarget: HTMLDivElement | undefined): Promise<void>;
-      _windowClasses(proc: AppProcess, window: HTMLDivElement, data: App): void;
-      _windowEvents(proc: AppProcess, window: HTMLDivElement, titlebar: HTMLDivElement | undefined, data: App): void;
-      focusPid(pid: number): void;
-      _renderTitlebar(process: AppProcess): HTMLDivElement | undefined;
-      _renderAltMenu(process: AppProcess): HTMLDivElement;
-      _resizeGrabbers(process: AppProcess, window: HTMLDivElement): undefined;
-      _resizer(window: HTMLDivElement, resizer: WindowResizer): HTMLDivElement;
-      remove(pid: number): Promise<void>;
-      toggleMaximize(pid: number): void;
-      updateDraggableDisabledState(pid: number, window: HTMLDivElement): void;
-      unMinimize(pid: number): void;
-      unsnapWindow(pid: number, dispatch?: boolean): void;
-      snapWindow(pid: number, variant: string): void;
-      toggleMinimize(pid: number): void;
-      toggleFullscreen(pid: number): void;
-      getAppInstances(id: string, originPid?: number): AppProcess[];
-      notifyCrash(data: App, e: Error, process: AppProcess): void;
-  }
-
-  export class ProcessHandler extends KernelModule {
-      BUSY: boolean;
-      private lastPid;
-      store: ReadableStore<Map<number, Process>>;
-      rendererPid: number;
-      renderer: AppRenderer | undefined;
-      env: Environment;
-      dispatch: SystemDispatch;
-      constructor(kernel: WaveKernel, id: string);
-      _init(): Promise<void>;
-      startRenderer(initPid: number): Promise<void>;
-      private makeBusy;
-      private makeNotBusy;
-      spawn<T = Process>(process: typeof Process, renderTarget?: HTMLDivElement | undefined, parentPid?: number | undefined, ...args: any[]): Promise<T | undefined>;
-      kill(pid: number, force?: boolean): Promise<ProcessKillResult>;
-      _killSubProceses(pid: number, force?: boolean): Promise<void>;
-      getSubProcesses(parentPid: number): Map<number, Process>;
-      getProcess<T = Process>(pid: number, disposedToo?: boolean): T | undefined;
-      getPid(): number;
-      isPid(pid: number): boolean;
-      ConnectDispatch(pid: number): ProcessDispatch | undefined;
-      waitForAvailable(): Promise<void>;
-  }
-
-  export const defaultReportOptions: ReportOptions;
-
-  export class BugHunt extends KernelModule {
-      server: ServerManager;
-      env: Environment;
-      handler: ProcessHandler;
-      constructor(kernel: WaveKernel, id: string);
-      _init(): Promise<void>;
-      createReport(options?: ReportOptions): OutgoingBugReport;
-      sendReport(outgoing: OutgoingBugReport, token?: string, options?: ReportOptions): Promise<boolean>;
-      getToken(): string;
-      getUserBugReports(token: string): Promise<BugReport[]>;
-      getPublicBugReports(): Promise<BugReport[]>;
-  }
-
-  export function Crash(reason: ErrorEvent | PromiseRejectionEvent): void;
-
-  export function handleGlobalErrors(): void;
-
   export interface State {
       render?: (props: Record<string, any>, accessors: StateRendererAccessors) => Promise<any>;
       app?: App;
@@ -5171,7 +5874,6 @@ declare global {
 
   export interface StateRendererAccessors {
       state: StateHandler;
-      kernel: WaveKernel;
       stack: ProcessHandler;
   }
 
@@ -5217,7 +5919,7 @@ declare global {
       email: ReadableStore<string>;
       actionsDisabled: ReadableStore<boolean>;
       showMainContent: ReadableStore<boolean>;
-      fullName: ReadableStore<string>;
+      displayName: ReadableStore<string>;
       server: ServerManager;
       private token;
       readonly pages: LegacyComponentType[];
@@ -5274,18 +5976,16 @@ declare global {
       private validateUserToken;
       resetCookies(): void;
       private askForTotp;
+      firstRun(daemon: UserDaemon): Promise<void>;
       loadPersistence(): void;
       savePersistence(username: string, profilePicture: string, loginWallpaper?: string): void;
       deletePersistence(): void;
+      createUser(): void;
   }
 
   export const LoginApp: App;
 
   export default function TurnedOff(): Promise<void>;
-
-  export default function render(props: StateProps): Promise<void>;
-
-  export default function render(props: StateProps): Promise<void>;
 
   export class TerminalMode extends Process {
       userDaemon?: UserDaemon;
@@ -5295,9 +5995,9 @@ declare global {
       arcTerm?: ArcTerminal;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, target: HTMLDivElement);
       initializeTerminal(): Promise<void>;
-      proceed(username: string, password: string): Promise<false | void>;
+      proceed(username: string, password: string): Promise<boolean>;
       start(): Promise<boolean | undefined>;
-      startDaemon(token: string, username: string, info?: UserInfo): Promise<void>;
+      startDaemon(token: string, username: string): Promise<boolean>;
       private loadToken;
       private validateUserToken;
       resetCookies(): void;
@@ -5306,7 +6006,11 @@ declare global {
       askForTotp(token: string): Promise<boolean>;
   }
 
-  export default function render(_: StateProps, { stack, kernel }: StateRendererAccessors): Promise<void>;
+  export default function render(_: StateProps, { stack }: StateRendererAccessors): Promise<void>;
+
+  export default function render(props: StateProps): Promise<void>;
+
+  export default function render(props: StateProps): Promise<void>;
 
   export default function render(props: StateProps): Promise<void>;
 
@@ -5321,6 +6025,7 @@ declare global {
       stateAppProcess: AppProcess | undefined;
       _criticalProcess: boolean;
       constructor(handler: ProcessHandler, pid: number, parentPid: number, instanceName: string, store?: Record<string, State>);
+      start(): Promise<void>;
       loadState(id: string, props?: Record<string, any>, instant?: boolean): Promise<void>;
       loadStateNormally(id: string, data: State, htmlLoader: HTMLDivElement, cssLoader: HTMLLinkElement): Promise<void>;
       loadStateAsApp(data: State, props: Record<string, any>): Promise<void>;
@@ -5332,30 +6037,56 @@ declare global {
       protected stop(): Promise<any>;
   }
 
-  export class MemoryFilesystemDrive extends FilesystemDrive {
-      private readonly data;
-      FIXED: boolean;
-      IDENTIFIES_AS: string;
-      FILESYSTEM_LONG: string;
-      FILESYSTEM_SHORT: string;
-      HIDDEN: boolean;
-      label: string;
-      constructor(kernel: any, uuid: string, letter?: string);
-      private getPathParts;
-      private getEntry;
-      private setEntry;
-      private deleteEntry;
-      readDir(path: string): Promise<DirectoryReadReturn | undefined>;
-      createDirectory(path: string): Promise<boolean>;
-      readFile(path: string): Promise<ArrayBuffer | undefined>;
-      writeFile(path: string, data: Blob): Promise<boolean>;
-      tree(path: string): Promise<RecursiveDirectoryReadReturn | undefined>;
-      copyItem(source: string, destination: string): Promise<boolean>;
-      moveItem(source: string, destination: string): Promise<boolean>;
-      deleteItem(path: string): Promise<boolean>;
-      direct(path: string): Promise<string | undefined>;
-      quota(): Promise<UserQuota>;
+  export class KernelModule {
+      protected readonly IS_KMOD = true;
+      id: string;
+      protected state?: StateHandler;
+      constructor(kernel: WaveKernel, id: string);
+      _init(): Promise<void>;
+      __init(): Promise<void>;
+      protected Log(message: string, level?: LogLevel): void;
   }
+
+  export function getKMod<T = KernelModule>(id: string, dontCrash?: boolean): T;
+
+  export class Environment extends KernelModule {
+      private store;
+      private readOnlyValues;
+      constructor(kernel: WaveKernel, id: string);
+      _init(): Promise<void>;
+      set(key: string, value: any): boolean;
+      setMultiple(entries: [
+          string,
+          any
+      ][]): void;
+      delete(key: string): boolean;
+      get(key: string): any;
+      getMultiple(keys: string[]): any[];
+      setReadonly(key: string): void;
+      setWritable(key: string): void;
+      reset(): void;
+  }
+
+  export const defaultReportOptions: ReportOptions;
+
+  export class BugHunt extends KernelModule {
+      server: ServerManager;
+      env: Environment;
+      handler: ProcessHandler;
+      constructor(kernel: WaveKernel, id: string);
+      _init(): Promise<void>;
+      createReport(options?: ReportOptions): OutgoingBugReport;
+      sendReport(outgoing: OutgoingBugReport, token?: string, options?: ReportOptions): Promise<boolean>;
+      getToken(): string;
+      getUserBugReports(token: string): Promise<BugReport[]>;
+      getPublicBugReports(): Promise<BugReport[]>;
+  }
+
+  export function Crash(reason: ErrorEvent | PromiseRejectionEvent): void;
+
+  export function handleGlobalErrors(): void;
+
+  export function interceptTpaErrors(stack: string, e: Error): boolean;
 
   export class InitProcess extends Process {
       constructor(handler: ProcessHandler, pid: number, parentPid?: undefined);
@@ -5735,7 +6466,7 @@ declare global {
   export function prematurePanic(): void;
 
   export class WaveKernel {
-      private modules;
+      modules: string[];
       private PANICKED;
       Logs: ReadableStore<LogItem[]>;
       startMs: number;
@@ -5746,7 +6477,7 @@ declare global {
       ARCOS_MODE: string;
       ARCOS_BUILD: string;
       ARCOS_LICENSE: string;
-      BUGREP_TITLE: string;
+      PREMATURE: boolean;
       static get(): WaveKernel;
       static isPanicked(): boolean;
       constructor();
@@ -5760,6 +6491,18 @@ declare global {
   export function stringifyLogs(logs: LogItem[]): string;
 
   export function getReportIcon(report: BugReport): string;
+
+  export type InstallStatusType = "mkdir" | "file" | "registration" | "other";
+
+  export type InstallStatusMode = "done" | "failed" | "working";
+
+  export interface InstallStatusItem {
+      type: InstallStatusType;
+      status: InstallStatusMode;
+      content: string;
+  }
+
+  export type InstallStatus = Record<string, InstallStatusItem>;
 
   export const ICON_GROUP_CAPTIONS: {
       Branding: string;
@@ -5804,8 +6547,6 @@ declare global {
       };
   };
 
-  export function groupByTimeFrame<T extends Record<string, any>>(items: T[], column?: keyof T): Record<string, T[]>;
-
   export const MODES: Record<string, string>;
 
   export const Logo: (m?: string) => string;
@@ -5813,6 +6554,16 @@ declare global {
   export const set: Keyword;
 
   export function scopeToScopeCaption(scope: string): string;
+
+  export interface InstallerProcProgressNode {
+      proc: InstallerProcess | undefined;
+      status: ReadableStore<InstallStatus>;
+      failReason: ReadableStore<string>;
+      installing: ReadableStore<boolean>;
+      completed: ReadableStore<boolean>;
+      focused: ReadableStore<string>;
+      verboseLog: string[];
+  }
 
   export interface WeatherSearchResult {
       id: number;
@@ -5836,8 +6587,6 @@ declare global {
       results: WeatherSearchResult[];
       generationtime_ms: number;
   }
-
-  export const kernel: WaveKernel;
 
   export const daemon: UserDaemon;
 

@@ -1,9 +1,8 @@
 await load("./lib/socket.io.js");
 await load("./lib/neodrag.js");
-await load;
 
 class PlaceAPI {
-  constructor(pid) {
+  constructor(pid, process) {
     this.baseURL = "https://place.uk.to/api/";
     this.socketUrl = "https://place.uk.to/";
     this.socket = null;
@@ -19,6 +18,7 @@ class PlaceAPI {
     this.pid = pid;
     this.canvasID = "ArcOS";
     this.appCanvas;
+    this.process = process;
 
     this.parent = handler.getProcess(pid);
     this.Log = this.parent.Log.bind(this.parent);
@@ -57,6 +57,43 @@ class PlaceAPI {
     this.canvas = canvas;
     this.body = body;
     this.appCanvas = this.applyCanvas;
+    let statusDiv = body.querySelector(".status");
+    let currentStatusID = 0;
+
+    let http = new XMLHttpRequest();
+    http.open("GET", `${this.baseURL}/v3/status/`, true);
+    http.onload = () => {
+      if (http.status >= 200 && http.status < 300) {
+        const statusInfo = JSON.parse(http.responseText);
+          statusDiv.className = "status";
+          let currentStatus = statusInfo[0] || {"text": "Something went wrong whilst displaying statuses", "severity": 2};
+          statusDiv.innerHTML = `<div>${currentStatus["text"] || ""}</div>`;
+          if (currentStatus["severity"] === -1) {
+            statusDiv.classList.add("green");
+          } else if (currentStatus["severity"] === 1) {
+            statusDiv.classList.add("yellow");
+          } else if (currentStatus["severity"] === 2) {
+            statusDiv.classList.add("red");
+          }
+          currentStatusID++;
+          if (currentStatusID >= statusInfo.length - 1) currentStatusID = 0;
+        setInterval(() => {
+          statusDiv.className = "status";
+          let currentStatus = statusInfo[currentStatusID] || {"text": "Something went wrong whilst displaying statuses", "severity": 2};
+          statusDiv.innerHTML = `<div>${currentStatus["text"] || ""}</div>`;
+          if (currentStatus["severity"] === -1) {
+            statusDiv.classList.add("green");
+          } else if (currentStatus["severity"] === 1) {
+            statusDiv.classList.add("yellow");
+          } else if (currentStatus["severity"] === 2) {
+            statusDiv.classList.add("red");
+          }
+          currentStatusID++;
+          if (currentStatusID >= statusInfo.length - 1) currentStatusID = 0;
+        }, 10000);
+      }
+    }
+    http.send();
 
     body.querySelector("#authButton").addEventListener("click", () => {
       if (this.token && this.token !== "null") {
@@ -367,6 +404,17 @@ class PlaceAPI {
       );
       console.error("Error during login:", error);
     }
+  }
+
+  async showNotification(type, message) {
+    // let n = new Notification({
+    //   title: type === "error" ? "Error" : "Info",
+    //   message: message,
+    //   timeout: 5000,
+    // });
+    // 
+    // this.process.userDaemon.sendNotification(n);
+    // Attempted to send a system notification, but it doesn't work and isn't at all necessary.
   }
 
   async getUserFromUserID(userID) {
