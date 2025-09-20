@@ -1,7 +1,7 @@
 {
   "metadata": {
     "name": "Place for ArcOS",
-    "version": "1.1.2",
+    "version": "1.2.0",
     "author": "Logan Cookson",
     "icon": "@local:icon.png",
     "appGroup": "entertainment"
@@ -12,16 +12,16 @@
     "y": 0
   },
   "size": {
-    "w": 300,
-    "h": 300
+    "w": 700,
+    "h": 480
   },
   "minSize": {
-    "w": 640,
+    "w": 700,
     "h": 480
   },
   "maxSize": {
-    "w": 9999999,
-    "h": 9999999
+    "w": -1,
+    "h": -1
   },
   "state": {
     "minimized": false,
