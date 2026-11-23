@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "name": "Place for ArcOS",
-    "description": "An official client for https://placepixel.online/ for ArcOS!",
+    "name": "Place for Sacruda",
+    "description": "An official client for https://placepixel.online/ for Sacruda!",
     "author": "Logan Cookson",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "installLocation": "U:/Applications/LC_PlaceArcOS",
     "appId": "LC_PlaceArcOS",
     "store": {
@@ -20,6 +20,6 @@
   "outFile": "LC_PlaceArcOS.arc",
   "payloadDir": "src",
   "devPort": 3128,
-  "buildHash": "aa54db9c",
+  "buildHash": "86b8096d",
   "noHotRelaunch": false
 }
