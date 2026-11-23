@@ -4,14 +4,12 @@ class SettingsOverlayRuntime extends ThirdPartyAppProcess {
   /** @type {ThirdPartyAppProcess | undefined} */
   parent = undefined;
 
-  constructor(handler, pid, parentPid, app, workingDirectory) {
-    super(handler, pid, parentPid, app, workingDirectory);
+  constructor(pid, parentPid, app, operationId, workingDirectory) {
+    super(pid, parentPid, app, operationId, workingDirectory);
 
-    this.parent = this.handler.getProcess(parentPid);
+    this.parent = handler.getProcess(parentPid);
 
     this.baseURL;
-
-    // console.log(this.parent.place);
   }
 
   async render() {
@@ -57,55 +55,58 @@ class SettingsOverlayRuntime extends ThirdPartyAppProcess {
           option.value = canvas["canvasString"];
           option.textContent = canvas["canvasString"];
           canvasSelect.appendChild(option);
-        })
+        });
         canvasSelect.value = this.parent.place.canvasID || "arcos"; // Set default to arcos if not set
       }
     });
   }
 
-  
   async getCanvasList() {
-  let http = new XMLHttpRequest();
-  http.open("GET", `${this.baseURL}/v3/getPublicCanvasList`, false);
+    let http = new XMLHttpRequest();
+    http.open("GET", `${this.baseURL}/v3/getPublicCanvasList`, false);
 
-
-
-  return new Promise((resolve, reject) => {
-    http.onload = () => {
-      if (http.status >= 200 && http.status < 300) {
-        let canvases = JSON.parse(http.responseText);
-        let arcOSCanvas = this.getCanvasDetails("arcos").then((canvasDetails) => {
-          canvases = [...canvases, canvasDetails];
-          console.log("Fetched canvases:", canvases);
-          resolve(canvases);
-        });
-      } else {
-        console.error("Failed to fetch canvas list:", http.statusText);
-        reject([]);
-      }
-    }
-    http.send();
-  })
-}
+    return new Promise((resolve, reject) => {
+      http.onload = () => {
+        if (http.status >= 200 && http.status < 300) {
+          let canvases = JSON.parse(http.responseText);
+          let arcOSCanvas = this.getCanvasDetails("arcos").then(
+            (canvasDetails) => {
+              canvases = [...canvases, canvasDetails];
+              console.log("Fetched canvases:", canvases);
+              resolve(canvases);
+            },
+          );
+        } else {
+          console.error("Failed to fetch canvas list:", http.statusText);
+          reject([]);
+        }
+      };
+      http.send();
+    });
+  }
 
   async getCanvasDetails(canvasID) {
-  let http = new XMLHttpRequest();
-  http.open("GET", `${this.baseURL}/v3/getCanvasInfo?canvas=${canvasID}`, true);
+    let http = new XMLHttpRequest();
+    http.open(
+      "GET",
+      `${this.baseURL}/v3/getCanvasInfo?canvas=${canvasID}`,
+      true,
+    );
 
-  return new Promise((resolve, reject) => {
-    http.onload = () => {
-      if (http.status >= 200 && http.status < 300) {
-        const canvasInfo = JSON.parse(http.responseText)[0];
-        resolve(canvasInfo);
-      } else {
-        console.error("Failed to fetch canvas details:", http.statusText);
-        reject(new Error("Failed to fetch canvas details"));
-      }
-    };
-    http.onerror = () => reject(new Error("Network error"));
-    http.send();
-  });
-}
+    return new Promise((resolve, reject) => {
+      http.onload = () => {
+        if (http.status >= 200 && http.status < 300) {
+          const canvasInfo = JSON.parse(http.responseText)[0];
+          resolve(canvasInfo);
+        } else {
+          console.error("Failed to fetch canvas details:", http.statusText);
+          reject(new Error("Failed to fetch canvas details"));
+        }
+      };
+      http.onerror = () => reject(new Error("Network error"));
+      http.send();
+    });
+  }
 }
 
-runApp(SettingsOverlayRuntime, $METADATA, argv[0]);
+return SettingsOverlayRuntime;

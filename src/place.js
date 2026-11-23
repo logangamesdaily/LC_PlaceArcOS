@@ -534,7 +534,8 @@ class PlaceAPI {
 
     if (typeof json !== "object") return;
 
-    await daemon.spawnThirdParty(json, path, this.pid);
+    json.workingDirectory = util.join(workingDirectory, "overlay/login");
+    await daemon.spawn?.spawnAppMeta(json, this.pid);
   }
 
   async settingsOverlay() {
@@ -545,7 +546,8 @@ class PlaceAPI {
 
     if (typeof json !== "object") return;
 
-    await daemon.spawnThirdParty(json, path, this.pid);
+    json.workingDirectory = util.join(workingDirectory, "overlay/settings");
+    await daemon.spawn?.spawnAppMeta(json, this.pid);
   }
 
   async resetCanvas() {

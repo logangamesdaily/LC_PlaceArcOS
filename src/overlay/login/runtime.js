@@ -4,12 +4,10 @@ class LoginOverlayRuntime extends ThirdPartyAppProcess {
   /** @type {ThirdPartyAppProcess | undefined} */
   parent = undefined;
 
-  constructor(handler, pid, parentPid, app, workingDirectory) {
-    super(handler, pid, parentPid, app, workingDirectory);
+  constructor(pid, parentPid, app, operationId, workingDirectory) {
+    super(pid, parentPid, app, operationId, workingDirectory);
 
-    this.parent = this.handler.getProcess(parentPid);
-
-    console.log(this.parent);
+    this.parent = handler.getProcess(parentPid);
   }
 
   async render() {
@@ -30,4 +28,4 @@ class LoginOverlayRuntime extends ThirdPartyAppProcess {
   }
 }
 
-runApp(LoginOverlayRuntime, $METADATA, argv[0]);
+return LoginOverlayRuntime;

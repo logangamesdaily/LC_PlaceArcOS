@@ -20,6 +20,6 @@
   "outFile": "LC_PlaceArcOS.arc",
   "payloadDir": "src",
   "devPort": 3128,
-  "buildHash": "71c41920",
+  "buildHash": "aa54db9c",
   "noHotRelaunch": false
 }
